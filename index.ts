@@ -3,7 +3,7 @@ export interface TypeOptions {
     nameOfFunction: string,
     functionReturnTypes: string[]
   ) => Promise<void>;
-  variable: (varName: string, value: any, valueType: string) => void;
+  variable: (value: any, valueType: string) => void;
   reportErr: (message: string, line: string) => void;
 }
 
@@ -15,7 +15,7 @@ export class Type implements TypeOptions {
     try {
     } catch (err) {}
   }
-  public variable(varName: string, value: any, valueType: string): void {
+  public variable(value: any, valueType: string): void {
     try {
       switch (valueType) {
         case "string":
@@ -36,12 +36,12 @@ export class Type implements TypeOptions {
           break;
         default:
           throw new Error(
-            `Static Error: Expected input for valueType argument should be one of the following: \n[string, number, bigint, object, function, boolean, undefined, null]\n actual type: [${valueType}]`
+            `Static Typing Error: Expected input for valueType argument should be one of the following: \n[string, number, bigint, object, function, boolean, undefined, null]\n actual type: [${valueType}]`
           );
       }
       if (typeof value !== valueType) {
         throw new Error(
-          `Static Error: ${varName} expected type [${valueType}], received [${typeof value}]`
+          `Static Typing Error: expected type [${valueType}], received [${typeof value}]`
         );
       }
     } catch (err) {

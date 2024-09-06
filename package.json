@@ -7,7 +7,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "static",
+    "typing",
+    "type",
+    "safety"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
