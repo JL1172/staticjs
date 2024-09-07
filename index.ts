@@ -7,6 +7,7 @@ export class Type {
   private readonly fs = fs;
   private path: string;
   private instance_name: string = "";
+  private var: string = "";
 
   constructor(fileName: string) {
     if (!fileName) {
@@ -63,7 +64,7 @@ export class Type {
         );
       }
     } catch (err) {
-      const line = (err as Error).stack?.split("\n")[2]|| "";
+      const line = (err as Error).stack?.split("\n")[2] || "";
       this.reportErr(chalk((err as Error).message + "", Colors.red), line);
     }
   }
@@ -101,8 +102,35 @@ export class Type {
           "Ensure instance of [Type Class] is instantiated with node's built in __filename variable passed as argument."
         );
       }
+      const method_declaration_pattern = /type.variable/;
 
-      
+      for (let i: number = 0; i < formattedData.length; i++) {
+        if (method_declaration_pattern.test(formattedData[i])) {
+          this.var = formattedData[i + 1];
+          break;
+        }
+      }
+      if (!this.var) {
+        throw new Error(
+          "Ensure variable is immediately following this method declaration to properly apply static typing. Example: \n" +
+            "\n" +
+            chalk(
+              'instance.variable("number")\n' + "const myVar = 2;",
+              Colors.white
+            ) +
+            "\n"
+        );
+      }
+
+      const var_name_pattern = new RegExp(this.var.split(" ")[1]);
+      console.log(var_name_pattern);
+      for (let i: number = 0; i < formattedData.length; i++) {
+        if (var_name_pattern.test(formattedData[i])) {
+          this.var = formattedData[i];
+          console.log(formattedData[i]);
+        }
+      }
+      console.log(this.var);
 
       return data;
     } catch (err) {
@@ -120,16 +148,17 @@ export class Type {
       let i: number = 0;
       let len: number = tokenized_code.length;
       let constKeyword = /const/;
+      let letKeyword = /let/;
       while (i < len) {
         const currentToken = tokenized_code[i];
-        if (constKeyword.test(currentToken)) {
+        if (constKeyword.test(currentToken) || letKeyword.test(currentToken)) {
           this.instance_name = tokenized_code[i + 1];
           break;
         }
         i++;
       }
     } catch (err) {
-      throw new Error("Internal Error");
+      this.reportErr(chalk("Internal Error", Colors.red), "");
     }
   }
 

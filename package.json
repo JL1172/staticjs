@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.ts",
   "type": "commonjs",
+  "types": "./types/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
