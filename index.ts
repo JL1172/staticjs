@@ -1,13 +1,21 @@
+import * as fs from "fs";
+import { chalk, Colors } from "./lib/colorize";
+
 export interface TypeOptions {
   func: (
     nameOfFunction: string,
     functionReturnTypes: string[]
   ) => Promise<void>;
-  variable: (value: any, valueType: string) => void;
+  variable: (valueType: string) => void;
   reportErr: (message: string, line: string) => void;
 }
 
 export class Type implements TypeOptions {
+  private readonly fs = fs;
+  private path: string;
+  constructor() {
+    this.path = process.cwd();
+  }
   public async func(
     nameOfFunction: string,
     functionReturnTypes: string[]
@@ -15,7 +23,7 @@ export class Type implements TypeOptions {
     try {
     } catch (err) {}
   }
-  public variable(value: any, valueType: string): void {
+  public variable(valueType: string): void {
     try {
       switch (valueType) {
         case "string":
@@ -36,9 +44,11 @@ export class Type implements TypeOptions {
           break;
         default:
           throw new Error(
-            `Static Typing Error: Expected input for valueType argument should be one of the following: \n[string, number, bigint, object, function, boolean, undefined, null]\n actual type: [${valueType}]`
+            `Static Typing Error: Expected input for [valueType] argument should be one of the following: \n[string, number, bigint, object, function, boolean, undefined, null]\n actual type: [${valueType}]`
           );
       }
+      console.log(this.path);
+      const value = "some value evaulated from parsing js code";
       if (typeof value !== valueType) {
         throw new Error(
           `Static Typing Error: expected type [${valueType}], received [${typeof value}]`
@@ -46,11 +56,11 @@ export class Type implements TypeOptions {
       }
     } catch (err) {
       const line = (err as Error).stack?.split("\n")[2] || "";
-      this.reportErr((err as Error).message + "", line);
+      this.reportErr(chalk((err as Error).message + "", Colors.red), line);
     }
   }
   public reportErr(message: string, line: string): void {
-    console.error(`${message}\nLINE: [${line}]`);
+    console.error(`${message}\n${chalk("LINE: " + line + "]", Colors.cyan)}`);
     process.exit(1);
   }
 }
