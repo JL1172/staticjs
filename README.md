@@ -1,0 +1,1 @@
+# Bringing static typing to javascript
