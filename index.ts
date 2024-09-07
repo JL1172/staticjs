@@ -1,13 +1,12 @@
 import * as fs from "fs";
 import { chalk, Colors } from "./lib/colorize";
-
+import { exec } from "child_process";
 //! all errors are self contained to avoid weird error and bug propagation
 
 export class Type {
   private readonly fs = fs;
   private path: string;
   private instance_name: string = "";
-  private var: string = "";
 
   constructor(fileName: string) {
     if (!fileName) {
@@ -55,7 +54,7 @@ export class Type {
           );
       }
       //if let keyword is found the variable is evaluated at its last instance to evaulate that it adhered to its type passed
-      const value = await this.findLastInstanceOfVariable();
+      const value = await this.findLastInstanceOfVariable(valueType);
 
       // let value = "";
       if (typeof value !== valueType) {
@@ -69,7 +68,9 @@ export class Type {
     }
   }
 
-  private async findLastInstanceOfVariable(): Promise<any> /*could return any composite or primitive type*/ {
+  private async findLastInstanceOfVariable(
+    valueType: string
+  ): Promise<any> /*could return any composite or primitive type*/ {
     try {
       //read file
       const data = await new Promise((resolve, reject) => {
@@ -102,15 +103,20 @@ export class Type {
           "Ensure instance of [Type Class] is instantiated with node's built in __filename variable passed as argument."
         );
       }
-      const method_declaration_pattern = /type.variable/;
 
+      const method_declaration_pattern = new RegExp(
+        this.instance_name + ".variable"
+      );
+      let identifier: string = "";
+      let methodCall: string = "";
       for (let i: number = 0; i < formattedData.length; i++) {
         if (method_declaration_pattern.test(formattedData[i])) {
-          this.var = formattedData[i + 1];
+          identifier = formattedData[i + 1];
+          methodCall = formattedData[i];
           break;
         }
       }
-      if (!this.var) {
+      if (!identifier || !methodCall) {
         throw new Error(
           "Ensure variable is immediately following this method declaration to properly apply static typing. Example: \n" +
             "\n" +
@@ -122,17 +128,68 @@ export class Type {
         );
       }
 
-      const var_name_pattern = new RegExp(this.var.split(" ")[1]);
-      console.log(var_name_pattern);
+      identifier = identifier
+        .split(" ")
+        .filter((n) => n !== "let" && n !== "const")[0]
+        .split("")
+        .filter((n) => n !== ":")
+        .join("");
+      /*
+      const var_name_pattern = new RegExp(identifier);
+      let variableReference: string = "";
       for (let i: number = 0; i < formattedData.length; i++) {
         if (var_name_pattern.test(formattedData[i])) {
-          this.var = formattedData[i];
-          console.log(formattedData[i]);
+          if (formattedData[i].split(" ").every((n) => n !== "//")) {
+            variableReference = formattedData[i];
+          }
         }
       }
-      console.log(this.var);
 
-      return data;
+      const splitVariableReferenceIndex =
+        variableReference.split(" ").indexOf("=") + 1;
+
+      const lastValueOfVariable = variableReference
+        .split(" ")
+        .slice(splitVariableReferenceIndex)
+        .join(" ");
+      return lastValueOfVariable;
+      */
+      console.log(identifier);
+      console.log(methodCall);
+      formattedData.push(
+        `if (typeof ${identifier} !== "${valueType}") {throw new Error("Static Typing Error: expected type [${valueType}], received [${typeof identifier}]");}`
+      );
+      let newFileToWrite = "";
+      for (let i = 0; i < formattedData.length; i++) {
+        newFileToWrite += formattedData[i] + "\n";
+      }
+      const tempPath = this.path.split("/");
+      tempPath[tempPath.length - 1] = "sdfjkls.ts";
+      const pathToWrite = tempPath.join("/");
+
+      await new Promise((resolve, reject) => {
+        fs.writeFile(pathToWrite, newFileToWrite, { encoding: "utf-8" }, () => {
+          resolve;
+        });
+      });
+
+      // await new Promise((resolve) => setTimeout(resolve, 1000));
+      // const command = `ts-node ${pathToWrite}`;
+      // console.log(command);
+      // await new Promise((resolve, reject) => {
+      //   //todo need to adjust dependent on file extension
+      //   exec(command, (error, stdout, stderr) => {
+      //     if (error) {
+      //       reject(error);
+      //     } else {
+      //       console.log("stdout: ", stdout);
+      //       console.log("stderr: ", stderr);
+      //       resolve(stdout);
+      //     }
+      //   });
+      // });
+      // console.log("ehewk");
+      //todo need to add support for executing
     } catch (err) {
       const message = (err as Error).message || err;
       this.reportErr(
