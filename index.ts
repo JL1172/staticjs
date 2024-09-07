@@ -1,6 +1,8 @@
 import * as fs from "fs";
 import { chalk, Colors } from "./lib/colorize";
 
+//! all errors are self contained to avoid weird error and bug propagation
+
 export class Type {
   private readonly fs = fs;
   private path: string;
@@ -53,6 +55,7 @@ export class Type {
       }
       //if let keyword is found the variable is evaluated at its last instance to evaulate that it adhered to its type passed
       const value = await this.findLastInstanceOfVariable();
+
       // let value = "";
       if (typeof value !== valueType) {
         throw new Error(
@@ -60,66 +63,74 @@ export class Type {
         );
       }
     } catch (err) {
-      const line: string = this.fetchCurrentLine(err as Error);
+      const line = (err as Error).stack?.split("\n")[2]|| "";
       this.reportErr(chalk((err as Error).message + "", Colors.red), line);
     }
   }
 
   private async findLastInstanceOfVariable(): Promise<any> /*could return any composite or primitive type*/ {
-    //read file
-    const data = await new Promise((resolve, reject) => {
-      this.fs.readFile(this.path, { encoding: "utf-8" }, (err, data) => {
-        if (err) {
-          reject(
-            "Ensure instance of [Type Class] must be instantiated with node's built in __filename variable passed as argument."
-          );
-        } else {
-          resolve(data);
-        }
+    try {
+      //read file
+      const data = await new Promise((resolve, reject) => {
+        this.fs.readFile(this.path, { encoding: "utf-8" }, (err, data) => {
+          if (err) {
+            reject(
+              "Trouble parsing path. Ensure instance of [Type Class] is instantiated with node's built in __filename variable passed as argument."
+            );
+          } else {
+            resolve(data);
+          }
+        });
       });
-    });
-    //split data
-    const formattedData = String(data)
-      .split("\n")
-      .filter((n) => n);
-    const class_instantiation_pattern = /new Type/;
-    //loop over to find name of instance
-    for (let i: number = 0; i < formattedData.length; i++) {
-      if (class_instantiation_pattern.test(formattedData[i])) {
-        this.fetchInstanceName(formattedData[i]);
-        break;
-      }
-    }
 
-    if (!this.instance_name) {
-      throw new Error(
-        "Ensure instance of [Type Class] must be instantiated with node's built in __filename variable passed as argument."
+      //split data
+      const formattedData = String(data)
+        .split("\n")
+        .filter((n) => n);
+      const class_instantiation_pattern = /new Type/;
+      //loop over to find name of instance
+      for (let i: number = 0; i < formattedData.length; i++) {
+        if (class_instantiation_pattern.test(formattedData[i])) {
+          this.fetchInstanceName(formattedData[i]);
+          break;
+        }
+      }
+
+      if (!this.instance_name) {
+        throw new Error(
+          "Ensure instance of [Type Class] is instantiated with node's built in __filename variable passed as argument."
+        );
+      }
+
+      
+
+      return data;
+    } catch (err) {
+      const message = (err as Error).message || err;
+      this.reportErr(
+        chalk(message + "", Colors.red),
+        (err as Error).stack?.split("\n").at(-2) || ""
       );
     }
   }
 
   private fetchInstanceName(line_of_code: string): void {
-    const tokenized_code = line_of_code.split(" ");
-    let i: number = 0;
-    let len: number = tokenized_code.length;
-    let constKeyword = /const/;
-    while (i < len) {
-      const currentToken = tokenized_code[i];
-      if (constKeyword.test(currentToken)) {
-        this.instance_name = tokenized_code[i + 1];
-        break;
+    try {
+      const tokenized_code = line_of_code.split(" ");
+      let i: number = 0;
+      let len: number = tokenized_code.length;
+      let constKeyword = /const/;
+      while (i < len) {
+        const currentToken = tokenized_code[i];
+        if (constKeyword.test(currentToken)) {
+          this.instance_name = tokenized_code[i + 1];
+          break;
+        }
+        i++;
       }
-      i++;
+    } catch (err) {
+      throw new Error("Internal Error");
     }
-    if (!this.instance_name) {
-      throw new ReferenceError(
-        `Error evaluating instance name of [Type] class`
-      );
-    }
-  }
-
-  private fetchCurrentLine(err: Error): string {
-    return err.stack?.split("\n").at(-4) || "";
   }
 
   private reportErr(message: string, line: string): void {
