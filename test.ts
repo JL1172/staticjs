@@ -1,5 +1,5 @@
 // const { Type } = require("./index.ts");
-import {Type} from ".";
+import { Type } from ".";
 
 const type = new Type(__filename);
 
@@ -16,3 +16,5 @@ function hello() {
 myVar = "heeflkajds";
 
 myVar = new RegExp("hello world");
+
+myVar = 1;

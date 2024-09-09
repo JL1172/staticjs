@@ -1,7 +1,14 @@
 import * as fs from "fs";
 import { chalk, Colors } from "./lib/colorize";
 import { exec } from "child_process";
+
 //! all errors are self contained to avoid weird error and bug propagation
+//todos
+//* 1. need to add support for multiline method calls like
+/*
+  instance.
+  variable();
+*/
 
 export class Type {
   private readonly fs = fs;
@@ -54,7 +61,7 @@ export class Type {
           );
       }
       //if let keyword is found the variable is evaluated at its last instance to evaulate that it adhered to its type passed
-      const value = await this.findLastInstanceOfVariable(valueType);
+      const value = await this.parseUserCode(valueType);
 
       // let value = "";
       if (typeof value !== valueType) {
@@ -68,14 +75,15 @@ export class Type {
     }
   }
 
-  private async findLastInstanceOfVariable(
+  private async parseUserCode(
     valueType: string
   ): Promise<any> /*could return any composite or primitive type*/ {
     try {
-      //read file
+      //read file that
       const data = await new Promise((resolve, reject) => {
         this.fs.readFile(this.path, { encoding: "utf-8" }, (err, data) => {
           if (err) {
+            //if there is an error, just throw this pre written
             reject(
               "Trouble parsing path. Ensure instance of [Type Class] is instantiated with node's built in __filename variable passed as argument."
             );
@@ -85,12 +93,13 @@ export class Type {
         });
       });
 
-      //split data
+      //split data received from readfile method and format it to remove white space
       const formattedData = String(data)
         .split("\n")
         .filter((n) => n);
+      //regex for instance
       const class_instantiation_pattern = /new Type/;
-      //loop over to find name of instance
+      //loop over to find line where class instance is instantiated to find name of instance
       for (let i: number = 0; i < formattedData.length; i++) {
         if (class_instantiation_pattern.test(formattedData[i])) {
           this.fetchInstanceName(formattedData[i]);
@@ -104,11 +113,13 @@ export class Type {
         );
       }
 
+      //find method declaration, will be dynamic which is why regexp object is used
       const method_declaration_pattern = new RegExp(
         this.instance_name + ".variable"
       );
       let identifier: string = "";
       let methodCall: string = "";
+      //loop through formatted data to find line where the variable is being identified
       for (let i: number = 0; i < formattedData.length; i++) {
         if (method_declaration_pattern.test(formattedData[i])) {
           identifier = formattedData[i + 1];
@@ -116,7 +127,9 @@ export class Type {
           break;
         }
       }
-      if (!identifier || !methodCall) {
+      const isValidVariableDeclaration: boolean =
+        this.validateVariableDeclaration(identifier);
+      if (isValidVariableDeclaration === false || !identifier || !methodCall) {
         throw new Error(
           "Ensure variable is immediately following this method declaration to properly apply static typing. Example: \n" +
             "\n" +
@@ -128,68 +141,50 @@ export class Type {
         );
       }
 
+      //this just removes ":" if used in typescript
       identifier = identifier
         .split(" ")
         .filter((n) => n !== "let" && n !== "const")[0]
         .split("")
         .filter((n) => n !== ":")
         .join("");
-      /*
-      const var_name_pattern = new RegExp(identifier);
-      let variableReference: string = "";
-      for (let i: number = 0; i < formattedData.length; i++) {
-        if (var_name_pattern.test(formattedData[i])) {
-          if (formattedData[i].split(" ").every((n) => n !== "//")) {
-            variableReference = formattedData[i];
-          }
-        }
-      }
 
-      const splitVariableReferenceIndex =
-        variableReference.split(" ").indexOf("=") + 1;
-
-      const lastValueOfVariable = variableReference
-        .split(" ")
-        .slice(splitVariableReferenceIndex)
-        .join(" ");
-      return lastValueOfVariable;
-      */
-      console.log(identifier);
-      console.log(methodCall);
       formattedData.push(
-        `if (typeof ${identifier} !== "${valueType}") {throw new Error("Static Typing Error: expected type [${valueType}], received [${typeof identifier}]");}`
+        `if (typeof ${identifier} !== "${valueType}") {throw new Error("Static Typing Error: expected type [${valueType}], received [${typeof identifier}] for variable ${identifier}");}`
       );
+      // formattedData.push(`process.exit(0)`);
+
       let newFileToWrite = "";
       for (let i = 0; i < formattedData.length; i++) {
         newFileToWrite += formattedData[i] + "\n";
       }
-      const tempPath = this.path.split("/");
-      tempPath[tempPath.length - 1] = "sdfjkls.ts";
-      const pathToWrite = tempPath.join("/");
 
+      const newFileName = new Date().toISOString() + ".ts";
+      const splitPath = this.path.split("/");
+      splitPath[splitPath.length - 1] = newFileName;
+      const newFilePath = splitPath.join("/");
+
+      await fs.promises.writeFile(newFilePath, newFileToWrite, {
+        encoding: "utf-8",
+      });
+      //todo NEED TO ADD CHECK CLAUSE FOR THIS FILE. MAYBE INSTEAD OF DOING DATE NAME JUST NAMING IT STATICJSJSJS AND THEN SEEING BEFORE EACH WRITE IF IT EXISTS, IF IT DOES DONT EXECUTE ANYMORE. THIS IS ALL RECURSIVELY BEING CALLED
+      //TODO TIMEOUT OPTION IS DANGEROUS BCAUSE IT DOESNT ALLOW WITH INTERFACING
+      const command = `npx ts-node ${newFilePath}`;
       await new Promise((resolve, reject) => {
-        fs.writeFile(pathToWrite, newFileToWrite, { encoding: "utf-8" }, () => {
-          resolve;
+        exec(command, (error, stdout, stderr) => {
+          if (error || stderr) {
+            const formattedErrMessage = error.message
+              .split("\n")
+              .filter((n) => n)
+              .slice(3)
+              .join("\n");
+            reject(formattedErrMessage);
+          } else {
+            resolve;
+          }
         });
       });
-
-      // await new Promise((resolve) => setTimeout(resolve, 1000));
-      // const command = `ts-node ${pathToWrite}`;
-      // console.log(command);
-      // await new Promise((resolve, reject) => {
-      //   //todo need to adjust dependent on file extension
-      //   exec(command, (error, stdout, stderr) => {
-      //     if (error) {
-      //       reject(error);
-      //     } else {
-      //       console.log("stdout: ", stdout);
-      //       console.log("stderr: ", stderr);
-      //       resolve(stdout);
-      //     }
-      //   });
-      // });
-      // console.log("ehewk");
-      //todo need to add support for executing
+      await fs.promises.unlink(newFilePath);
     } catch (err) {
       const message = (err as Error).message || err;
       this.reportErr(
@@ -199,6 +194,18 @@ export class Type {
     }
   }
 
+  private validateVariableDeclaration(line_of_code: string): boolean {
+    const tokenized_code = line_of_code.split(" ");
+    const letKeyword = /let/;
+    const constKeyword = /const/;
+    for (let i: number = 0; i < tokenized_code.length; i++) {
+      const currentToken = tokenized_code[i];
+      if (letKeyword.test(currentToken) || constKeyword.test(currentToken)) {
+        return true;
+      }
+    }
+    return false;
+  }
   private fetchInstanceName(line_of_code: string): void {
     try {
       const tokenized_code = line_of_code.split(" ");
@@ -209,6 +216,7 @@ export class Type {
       while (i < len) {
         const currentToken = tokenized_code[i];
         if (constKeyword.test(currentToken) || letKeyword.test(currentToken)) {
+          //this can be assigned to field instance because this instance of this class will only have one instance name associated w it per instance
           this.instance_name = tokenized_code[i + 1];
           break;
         }
@@ -221,6 +229,7 @@ export class Type {
 
   private reportErr(message: string, line: string): void {
     console.error(`${message}\n${chalk("LINE: " + line + "]", Colors.cyan)}`);
+    console.trace();
     process.exit(1);
   }
   private force_exit_for_dev_purposes_only(): void {
