@@ -15,6 +15,8 @@ function hello() {
   myVar = 10;
 }
 // }
+
+
 myVar = "heeflkajds";
 
 myVar = new RegExp("hello world");

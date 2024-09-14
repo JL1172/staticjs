@@ -18,6 +18,7 @@ export class Type {
   private instance_name: string = "";
   private updated_code: string[] = [];
   private parsed_identifiers: string[] = [];
+  private fileNameToUnsync: string;
   constructor(fileName: string) {
     if (!fileName) {
       this.reportErr(
@@ -197,26 +198,20 @@ export class Type {
       const splitPath = this.path.split("/");
       splitPath[splitPath.length - 1] = newFileName;
       const newFilePath = splitPath.join("/");
-
+      this.fileNameToUnsync = newFilePath;
       this.fs.writeFileSync(newFilePath, newFileToWrite, {
         encoding: "utf-8",
       });
-      this.cp.exec(`node ${newFilePath}`, (err, stdout, stderr) => {
-        if (err) {
-          //this is because this is an async operation and the catch block executes before this is finalized
-          const message = err.message.split("\n")[5];
-          this.reportErr(
-            chalk(message + "", Colors.red),
-            (err as Error).stack?.split("\n").at(-2) || ""
-          );
-        }
-      });
+      this.cp.execSync(`node ${newFilePath}`);
+      
     } catch (err) {
-      const message = (err as Error).message || "";
+      const message = (err as Error).message.split("\n")[5] || "";
       this.reportErr(
         chalk(message + "", Colors.red),
         (err as Error).stack?.split("\n").at(-2) || ""
       );
+    } finally {
+      this.fs.unlinkSync(this.fileNameToUnsync);
     }
   }
 

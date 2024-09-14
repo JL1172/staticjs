@@ -184,7 +184,6 @@ var Type = /** @class */ (function () {
         }
     };
     Type.prototype.eof = function () {
-        var _this = this;
         var _a;
         try {
             var method_declaration_pattern = new RegExp(this.instance_name + ".variable");
@@ -202,21 +201,18 @@ var Type = /** @class */ (function () {
             var splitPath = this.path.split("/");
             splitPath[splitPath.length - 1] = newFileName;
             var newFilePath = splitPath.join("/");
+            this.fileNameToUnsync = newFilePath;
             this.fs.writeFileSync(newFilePath, newFileToWrite, {
                 encoding: "utf-8",
             });
-            this.cp.exec("node ".concat(newFilePath), function (err, stdout, stderr) {
-                var _a;
-                if (err) {
-                    //this is because this is an async operation and the catch block executes before this is finalized
-                    var message = err.message.split("\n")[5];
-                    _this.reportErr((0, colorize_1.chalk)(message + "", colorize_1.Colors.red), ((_a = err.stack) === null || _a === void 0 ? void 0 : _a.split("\n").at(-2)) || "");
-                }
-            });
+            this.cp.execSync("node ".concat(newFilePath));
         }
         catch (err) {
-            var message = err.message || "";
+            var message = err.message.split("\n")[5] || "";
             this.reportErr((0, colorize_1.chalk)(message + "", colorize_1.Colors.red), ((_a = err.stack) === null || _a === void 0 ? void 0 : _a.split("\n").at(-2)) || "");
+        }
+        finally {
+            this.fs.unlinkSync(this.fileNameToUnsync);
         }
     };
     Type.prototype.validateVariableDeclaration = function (line_of_code) {
