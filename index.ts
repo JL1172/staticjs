@@ -240,45 +240,58 @@ export class Type {
       this.fs.writeFileSync(newFilePath, newFileToWrite, {
         encoding: "utf-8",
       });
+    
       this.cp.exec(`node ${newFilePath}`, (err) => {
+        console.log("executing again");
         if (err) {
-
-          //! all the recursion neeeds to be called in here 
-          this.fs.unlink(this.fileNameToUnsync, (err) => {
-            if (err) {
-              console.log("unlink error");
-              const msg = err.message;
-              this.reportErr(
-                chalk(msg + "", Colors.red),
-                (err as Error).stack?.split("\n").at(-2) || ""
-              );
+          console.log("error error")
+          //! all the recursion neeeds to be called in here
+          //! new code
+          if (this.method_call_count === 0) {
+            //! new code
+            this.fs.unlink(this.fileNameToUnsync, (err) => {
+              if (err) {
+                const msg = err.message;
+                this.reportErr(
+                  chalk(msg + "", Colors.red),
+                  (err as Error).stack?.split("\n").at(-2) || ""
+                );
+              } else {
+                console.log(this.errorsToPresent);
+                this.reportErr(
+                  chalk(this.errorsToPresent.join("\n"), Colors.red),
+                  ""
+                );
+              }
+            });
+          } else {
+            const message = (err as Error).message.split("\n")[5] || "";
+            console.log((err as Error).message.split("\n"));
+            this.errorsToPresent.push(chalk(message + "", Colors.red));
+            const errorLineToMatch = err.message.split("\n")[2];
+            //recursion
+            console.log(this.errorsToPresent);
+            // console.log(this.updated_code);
+            for (let i = 0; i < this.updated_code.length; i++) {
+              if (errorLineToMatch === this.updated_code[i]) {
+                this.updated_code[i] = "";
+              }
             }
-          });
-          
-          const message = (err as Error).message.split("\n")[5] || "";
-          // this.errorsToPresent.push(chalk(message + "", Colors.red));
-          // console.log(message);
-          // console.log(this.updated_code);
-          this.reportErr(chalk(message, Colors.red), "");
-          
-          //! all the recursion neeeds to be called in here 
+            // console.log(this.updated_code);
+            this.method_call_count--;
+            console.log("executing end")
+            this.eof();
+          }
+          //or reporting
+
+          //! all the recursion neeeds to be called in here
         } else {
-          this.fs.unlink(this.fileNameToUnsync, (err) => {
-            if (err) {
-            }
-          });
+          // this.fs.unlink(this.fileNameToUnsync, (err) => {
+          //   if (err) {
+          //   }
+          // });
+          this.eof();
         }
-
-        // //! new code
-        // if (this.method_call_count === 0) {
-        //   this.reportErr(
-        //     chalk(this.errorsToPresent.join("\n"), Colors.red),
-        //     ""
-        //   );
-        // } else {
-        //   this.method_call_count--;
-        // }
-        // //! new code
       });
     } catch (err) {
       const code = err["code"];
