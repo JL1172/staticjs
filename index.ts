@@ -42,21 +42,23 @@ export class Type {
         }
       }
       let colon_found: boolean = false;
-      // instanceName = instanceName
-      //   .split(" ")
-      //   .filter((n) => n !== "let" && n !== "const")[0]
-      //   .split("")
-      //   .map((n) => {
-      //     if (n === ":" || n === "=") {
-      //       colon_found = true;
-      //     } else {
-      //       if (!colon_found) {
-      //         return n;
-      //       }
-      //     }
-      //   })
-      //   .join("");
-      instanceName = "type";
+      if (!this.instance_name) {
+      instanceName = instanceName
+        .split(" ")
+        .filter((n) => n !== "let" && n !== "const")[0]
+        .split("")
+        .map((n) => {
+          if (n === ":" || n === "=") {
+            colon_found = true;
+          } else {
+            if (!colon_found) {
+              return n;
+            }
+          }
+        })
+        .join("");
+      } 
+      // instanceName = "type";
       const method_declaration_pattern = new RegExp(instanceName + ".variable");
       for (let i = 0; i < dataToParse.length; i++) {
         if (method_declaration_pattern.test(dataToParse[i])) {
@@ -65,10 +67,6 @@ export class Type {
       }
     } catch (err) {
       this.reportErr(chalk(err + "", Colors.red), "");
-      // this.reportErr(
-      //   chalk("Error constructing class. Ensure file exists.", Colors.red),
-      //   ""
-      // );
     }
   }
 
@@ -81,7 +79,6 @@ export class Type {
   }
 
   public variable(valueType: string): void {
-    console.clear();
     try {
       switch (valueType) {
         case "string":
@@ -323,6 +320,14 @@ export class Type {
   }
 
   private reportErr(message: string, line: string): void {
+    console.clear();
+    console.error(chalk(`
+░██████╗████████╗░█████╗░████████╗██╗░█████╗░░░░░░██╗░██████╗
+██╔════╝╚══██╔══╝██╔══██╗╚══██╔══╝██║██╔══██╗░░░░░██║██╔════╝
+╚█████╗░░░░██║░░░███████║░░░██║░░░██║██║░░╚═╝░░░░░██║╚█████╗░
+░╚═══██╗░░░██║░░░██╔══██║░░░██║░░░██║██║░░██╗██╗░░██║░╚═══██╗
+██████╔╝░░░██║░░░██║░░██║░░░██║░░░██║╚█████╔╝╚█████╔╝██████╔╝
+╚═════╝░░░░╚═╝░░░╚═╝░░╚═╝░░░╚═╝░░░╚═╝░╚════╝░░╚════╝░╚═════╝░`, Colors.blue));
     console.error(`${message}\n${chalk("LINE: " + line + "]", Colors.cyan)}`);
     console.trace();
     process.exit(1);
