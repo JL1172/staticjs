@@ -42,23 +42,24 @@ export class Type {
         }
       }
       let colon_found: boolean = false;
-      if (!this.instance_name) {
-      instanceName = instanceName
-        .split(" ")
-        .filter((n) => n !== "let" && n !== "const")[0]
-        .split("")
-        .map((n) => {
-          if (n === ":" || n === "=") {
-            colon_found = true;
-          } else {
-            if (!colon_found) {
-              return n;
-            }
-          }
-        })
-        .join("");
-      } 
-      // instanceName = "type";
+      //todo need to figure out how to parse this without throwing any error
+      // if (!this.instance_name) {
+      // instanceName = instanceName
+      //   .split(" ")
+      //   .filter((n) => n !== "let" && n !== "const")[0]
+      //   .split("")
+      //   .map((n) => {
+      //     if (n === ":" || n === "=") {
+      //       colon_found = true;
+      //     } else {
+      //       if (!colon_found) {
+      //         return n;
+      //       }
+      //     }
+      //   })
+      //   .join("");
+      // } 
+      instanceName = "type";
       const method_declaration_pattern = new RegExp(instanceName + ".variable");
       for (let i = 0; i < dataToParse.length; i++) {
         if (method_declaration_pattern.test(dataToParse[i])) {
