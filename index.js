@@ -208,7 +208,6 @@ var Type = /** @class */ (function () {
             if (this.updated_code.length === 0) {
                 this.updated_code = formattedData;
             }
-            //! might need to change back to push
             this.updated_code.push("if (typeof ".concat(identifier, " !== \"").concat(valueType, "\") {throw new Error(\"Static Typing Error: expected type [").concat(valueType, "], received [").concat(typeof identifier, "] for variable [").concat((0, colorize_1.chalk)((0, colorize_1.chalk)(identifier, colorize_1.Colors.white), colorize_1.Colors.bgRed)).concat((0, colorize_1.chalk)("]", colorize_1.Colors.red), "\")}"));
         }
         catch (err) {
@@ -243,8 +242,9 @@ var Type = /** @class */ (function () {
             this.fs.writeFileSync(newFilePath, newFileToWrite, {
                 encoding: "utf-8",
             });
-            this.cp.exec("node ".concat(newFilePath), function (err, stdout) {
+            this.cp.exec("node ".concat(newFilePath), function (err) {
                 if (err) {
+                    //! all the recursion neeeds to be called in here 
                     _this.fs.unlink(_this.fileNameToUnsync, function (err) {
                         var _a;
                         if (err) {
@@ -254,10 +254,11 @@ var Type = /** @class */ (function () {
                         }
                     });
                     var message = err.message.split("\n")[5] || "";
-                    _this.errorsToPresent.push((0, colorize_1.chalk)(message + "", colorize_1.Colors.red));
-                    console.log(message);
-                    console.log(_this.updated_code);
-                    // this.reportErr(chalk(message, Colors.red), "");
+                    // this.errorsToPresent.push(chalk(message + "", Colors.red));
+                    // console.log(message);
+                    // console.log(this.updated_code);
+                    _this.reportErr((0, colorize_1.chalk)(message, colorize_1.Colors.red), "");
+                    //! all the recursion neeeds to be called in here 
                 }
                 else {
                     _this.fs.unlink(_this.fileNameToUnsync, function (err) {
@@ -265,14 +266,16 @@ var Type = /** @class */ (function () {
                         }
                     });
                 }
-                //! new code
-                if (_this.method_call_count === 0) {
-                    _this.reportErr((0, colorize_1.chalk)(_this.errorsToPresent.join("\n"), colorize_1.Colors.red), "");
-                }
-                else {
-                    _this.method_call_count--;
-                }
-                //! new code
+                // //! new code
+                // if (this.method_call_count === 0) {
+                //   this.reportErr(
+                //     chalk(this.errorsToPresent.join("\n"), Colors.red),
+                //     ""
+                //   );
+                // } else {
+                //   this.method_call_count--;
+                // }
+                // //! new code
             });
         }
         catch (err) {

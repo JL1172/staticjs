@@ -192,7 +192,7 @@ export class Type {
       if (this.updated_code.length === 0) {
         this.updated_code = formattedData;
       }
-      //! might need to change back to push
+
       this.updated_code.push(
         `if (typeof ${identifier} !== "${valueType}") {throw new Error("Static Typing Error: expected type [${valueType}], received [${typeof identifier}] for variable [${chalk(
           chalk(identifier, Colors.white),
@@ -240,8 +240,10 @@ export class Type {
       this.fs.writeFileSync(newFilePath, newFileToWrite, {
         encoding: "utf-8",
       });
-      this.cp.exec(`node ${newFilePath}`, (err, stdout) => {
+      this.cp.exec(`node ${newFilePath}`, (err) => {
         if (err) {
+
+          //! all the recursion neeeds to be called in here 
           this.fs.unlink(this.fileNameToUnsync, (err) => {
             if (err) {
               console.log("unlink error");
@@ -252,25 +254,31 @@ export class Type {
               );
             }
           });
-
+          
           const message = (err as Error).message.split("\n")[5] || "";
-          this.errorsToPresent.push(chalk(message + "", Colors.red));
-          console.log(message);
-          console.log(this.updated_code);
-          // this.reportErr(chalk(message, Colors.red), "");
+          // this.errorsToPresent.push(chalk(message + "", Colors.red));
+          // console.log(message);
+          // console.log(this.updated_code);
+          this.reportErr(chalk(message, Colors.red), "");
+          
+          //! all the recursion neeeds to be called in here 
         } else {
           this.fs.unlink(this.fileNameToUnsync, (err) => {
             if (err) {
             }
           });
         }
-        //! new code
-        if (this.method_call_count === 0) {
-          this.reportErr(chalk(this.errorsToPresent.join("\n"), Colors.red), "");
-        } else {
-          this.method_call_count--;
-        }
-        //! new code
+
+        // //! new code
+        // if (this.method_call_count === 0) {
+        //   this.reportErr(
+        //     chalk(this.errorsToPresent.join("\n"), Colors.red),
+        //     ""
+        //   );
+        // } else {
+        //   this.method_call_count--;
+        // }
+        // //! new code
       });
     } catch (err) {
       const code = err["code"];
