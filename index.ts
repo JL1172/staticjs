@@ -202,16 +202,37 @@ export class Type {
       this.fs.writeFileSync(newFilePath, newFileToWrite, {
         encoding: "utf-8",
       });
-      this.cp.execSync(`node ${newFilePath}`);
-      
+      this.cp.exec(`node ${newFilePath}`, (err, stdout) => {
+        if (err) {
+          this.fs.unlink(this.fileNameToUnsync, (err) => {
+            if (err) {
+              const msg = err.message;
+              this.reportErr(
+                chalk(msg + "", Colors.red),
+                (err as Error).stack?.split("\n").at(-2) || ""
+              );
+            }
+          });
+          const message = (err as Error).message.split("\n")[5] || "";
+          this.reportErr(
+            chalk(message + "", Colors.red),
+            (err as Error).stack?.split("\n").at(-2) || ""
+          );
+        } else {
+          this.fs.unlink(this.fileNameToUnsync, (err) => {
+            if (err) {};
+          });
+        }
+      });
     } catch (err) {
-      const message = (err as Error).message.split("\n")[5] || "";
-      this.reportErr(
-        chalk(message + "", Colors.red),
-        (err as Error).stack?.split("\n").at(-2) || ""
-      );
-    } finally {
-      this.fs.unlinkSync(this.fileNameToUnsync);
+      const code = err["code"];
+      if (!code) {
+        const message = (err as Error).message || "";
+        this.reportErr(
+          chalk(message + "", Colors.red),
+          (err as Error).stack?.split("\n").at(-2) || ""
+        );
+      }
     }
   }
 

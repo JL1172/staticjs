@@ -184,6 +184,7 @@ var Type = /** @class */ (function () {
         }
     };
     Type.prototype.eof = function () {
+        var _this = this;
         var _a;
         try {
             var method_declaration_pattern = new RegExp(this.instance_name + ".variable");
@@ -205,14 +206,33 @@ var Type = /** @class */ (function () {
             this.fs.writeFileSync(newFilePath, newFileToWrite, {
                 encoding: "utf-8",
             });
-            this.cp.execSync("node ".concat(newFilePath));
+            this.cp.exec("node ".concat(newFilePath), function (err, stdout) {
+                var _a;
+                if (err) {
+                    _this.fs.unlink(_this.fileNameToUnsync, function (err) {
+                        var _a;
+                        if (err) {
+                            var msg = err.message;
+                            _this.reportErr((0, colorize_1.chalk)(msg + "", colorize_1.Colors.red), ((_a = err.stack) === null || _a === void 0 ? void 0 : _a.split("\n").at(-2)) || "");
+                        }
+                    });
+                    var message = err.message.split("\n")[5] || "";
+                    _this.reportErr((0, colorize_1.chalk)(message + "", colorize_1.Colors.red), ((_a = err.stack) === null || _a === void 0 ? void 0 : _a.split("\n").at(-2)) || "");
+                }
+                else {
+                    _this.fs.unlink(_this.fileNameToUnsync, function (err) {
+                        if (err) { }
+                        ;
+                    });
+                }
+            });
         }
         catch (err) {
-            var message = err.message.split("\n")[5] || "";
-            this.reportErr((0, colorize_1.chalk)(message + "", colorize_1.Colors.red), ((_a = err.stack) === null || _a === void 0 ? void 0 : _a.split("\n").at(-2)) || "");
-        }
-        finally {
-            this.fs.unlinkSync(this.fileNameToUnsync);
+            var code = err["code"];
+            if (!code) {
+                var message = err.message || "";
+                this.reportErr((0, colorize_1.chalk)(message + "", colorize_1.Colors.red), ((_a = err.stack) === null || _a === void 0 ? void 0 : _a.split("\n").at(-2)) || "");
+            }
         }
     };
     Type.prototype.validateVariableDeclaration = function (line_of_code) {

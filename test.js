@@ -4,10 +4,10 @@ const { Type } = require("./index.js");
 const type = new Type(__filename);
 
 type.variable("number");
-let myVar= 1; 
+let myVar= 3; 
 
 type.variable("string");
-const name = "jacob"; 
+let name = "jacob"; 
 
 myVar = 2;
 function hello() {
@@ -16,11 +16,11 @@ function hello() {
 }
 // }
 
-
+name = "yes";
 myVar = "heeflkajds";
 
 myVar = new RegExp("hello world");
 
-myVar = "hello world";
+myVar = [];
 
 type.eof();
