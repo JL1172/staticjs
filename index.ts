@@ -19,6 +19,8 @@ export class Type {
   private updated_code: string[] = [];
   private parsed_identifiers: string[] = [];
   private fileNameToUnsync: string;
+  private errorsToPresent: string[] = [];
+  private method_call_count: number = 0;
   constructor(fileName: string) {
     if (!fileName) {
       this.reportErr(
@@ -30,6 +32,42 @@ export class Type {
       );
     }
     this.path = fileName;
+    try {
+      const data = this.fs.readFileSync(this.path, { encoding: "utf-8" });
+      const dataToParse = data.split("\n");
+      let instanceName: string;
+      for (let i = 0; i < dataToParse.length; i++) {
+        if (/new Type/.test(dataToParse[i])) {
+          instanceName = dataToParse[i];
+        }
+      }
+      let colon_found: boolean = false;
+      instanceName = instanceName
+        .split(" ")
+        .filter((n) => n !== "let" && n !== "const")[0]
+        .split("")
+        .map((n) => {
+          if (n === ":" || n === "=") {
+            colon_found = true;
+          } else {
+            if (!colon_found) {
+              return n;
+            }
+          }
+        })
+        .join("");
+      const method_declaration_pattern = new RegExp(instanceName + ".variable");
+      for (let i = 0; i < dataToParse.length; i++) {
+        if (method_declaration_pattern.test(dataToParse[i])) {
+          this.method_call_count++;
+        }
+      }
+    } catch (err) {
+      this.reportErr(
+        chalk("Error constructing class. Ensure file exists.", Colors.red),
+        ""
+      );
+    }
   }
 
   public async func(
@@ -154,6 +192,7 @@ export class Type {
       if (this.updated_code.length === 0) {
         this.updated_code = formattedData;
       }
+      //! might need to change back to push
       this.updated_code.push(
         `if (typeof ${identifier} !== "${valueType}") {throw new Error("Static Typing Error: expected type [${valueType}], received [${typeof identifier}] for variable [${chalk(
           chalk(identifier, Colors.white),
@@ -161,7 +200,6 @@ export class Type {
         )}${chalk("]", Colors.red)}")}`
       );
     } catch (err) {
-      console.log("helllooooo world");
       const code = err["code"];
       if (code && code === "ENOENT") {
         this.reportErr(
@@ -206,6 +244,7 @@ export class Type {
         if (err) {
           this.fs.unlink(this.fileNameToUnsync, (err) => {
             if (err) {
+              console.log("unlink error");
               const msg = err.message;
               this.reportErr(
                 chalk(msg + "", Colors.red),
@@ -213,16 +252,25 @@ export class Type {
               );
             }
           });
+
           const message = (err as Error).message.split("\n")[5] || "";
-          this.reportErr(
-            chalk(message + "", Colors.red),
-            (err as Error).stack?.split("\n").at(-2) || ""
-          );
+          this.errorsToPresent.push(chalk(message + "", Colors.red));
+          console.log(message);
+          console.log(this.updated_code);
+          // this.reportErr(chalk(message, Colors.red), "");
         } else {
           this.fs.unlink(this.fileNameToUnsync, (err) => {
-            if (err) {};
+            if (err) {
+            }
           });
         }
+        //! new code
+        if (this.method_call_count === 0) {
+          this.reportErr(chalk(this.errorsToPresent.join("\n"), Colors.red), "");
+        } else {
+          this.method_call_count--;
+        }
+        //! new code
       });
     } catch (err) {
       const code = err["code"];
@@ -265,6 +313,7 @@ export class Type {
       }
     } catch (err) {
       this.reportErr(chalk("Internal Error", Colors.red), "");
+    } finally {
     }
   }
 

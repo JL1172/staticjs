@@ -21,6 +21,7 @@ myVar = "heeflkajds";
 
 myVar = new RegExp("hello world");
 
-myVar = [];
+myVar = 3;
+name = 2323
 
 type.eof();

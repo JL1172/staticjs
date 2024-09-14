@@ -55,10 +55,47 @@ var Type = /** @class */ (function () {
         this.instance_name = "";
         this.updated_code = [];
         this.parsed_identifiers = [];
+        this.errorsToPresent = [];
+        this.method_call_count = 0;
         if (!fileName) {
             this.reportErr((0, colorize_1.chalk)("Instance of [Type Class] must be instantiated with node's built in __filename variable passed as argument.", colorize_1.Colors.bgRed), "");
         }
         this.path = fileName;
+        try {
+            var data = this.fs.readFileSync(this.path, { encoding: "utf-8" });
+            var dataToParse = data.split("\n");
+            var instanceName = void 0;
+            for (var i = 0; i < dataToParse.length; i++) {
+                if (/new Type/.test(dataToParse[i])) {
+                    instanceName = dataToParse[i];
+                }
+            }
+            var colon_found_1 = false;
+            instanceName = instanceName
+                .split(" ")
+                .filter(function (n) { return n !== "let" && n !== "const"; })[0]
+                .split("")
+                .map(function (n) {
+                if (n === ":" || n === "=") {
+                    colon_found_1 = true;
+                }
+                else {
+                    if (!colon_found_1) {
+                        return n;
+                    }
+                }
+            })
+                .join("");
+            var method_declaration_pattern = new RegExp(instanceName + ".variable");
+            for (var i = 0; i < dataToParse.length; i++) {
+                if (method_declaration_pattern.test(dataToParse[i])) {
+                    this.method_call_count++;
+                }
+            }
+        }
+        catch (err) {
+            this.reportErr((0, colorize_1.chalk)("Error constructing class. Ensure file exists.", colorize_1.Colors.red), "");
+        }
     }
     Type.prototype.func = function (nameOfFunction, functionReturnTypes) {
         return __awaiter(this, void 0, void 0, function () {
@@ -152,17 +189,17 @@ var Type = /** @class */ (function () {
                     (0, colorize_1.chalk)('instance.variable("number")\n' + "const myVar = 2;", colorize_1.Colors.white) +
                     "\n");
             }
-            var colon_found_1 = false;
+            var colon_found_2 = false;
             identifier = identifier
                 .split(" ")
                 .filter(function (n) { return n !== "let" && n !== "const"; })[0]
                 .split("")
                 .map(function (n) {
                 if (n === ":" || n === "=") {
-                    colon_found_1 = true;
+                    colon_found_2 = true;
                 }
                 else {
-                    if (!colon_found_1) {
+                    if (!colon_found_2) {
                         return n;
                     }
                 }
@@ -171,10 +208,10 @@ var Type = /** @class */ (function () {
             if (this.updated_code.length === 0) {
                 this.updated_code = formattedData;
             }
+            //! might need to change back to push
             this.updated_code.push("if (typeof ".concat(identifier, " !== \"").concat(valueType, "\") {throw new Error(\"Static Typing Error: expected type [").concat(valueType, "], received [").concat(typeof identifier, "] for variable [").concat((0, colorize_1.chalk)((0, colorize_1.chalk)(identifier, colorize_1.Colors.white), colorize_1.Colors.bgRed)).concat((0, colorize_1.chalk)("]", colorize_1.Colors.red), "\")}"));
         }
         catch (err) {
-            console.log("helllooooo world");
             var code = err["code"];
             if (code && code === "ENOENT") {
                 this.reportErr((0, colorize_1.chalk)("Trouble parsing path. Ensure instance of [Type Class] is instantiated with node's built in __filename variable passed as argument.", colorize_1.Colors.red), "");
@@ -207,24 +244,35 @@ var Type = /** @class */ (function () {
                 encoding: "utf-8",
             });
             this.cp.exec("node ".concat(newFilePath), function (err, stdout) {
-                var _a;
                 if (err) {
                     _this.fs.unlink(_this.fileNameToUnsync, function (err) {
                         var _a;
                         if (err) {
+                            console.log("unlink error");
                             var msg = err.message;
                             _this.reportErr((0, colorize_1.chalk)(msg + "", colorize_1.Colors.red), ((_a = err.stack) === null || _a === void 0 ? void 0 : _a.split("\n").at(-2)) || "");
                         }
                     });
                     var message = err.message.split("\n")[5] || "";
-                    _this.reportErr((0, colorize_1.chalk)(message + "", colorize_1.Colors.red), ((_a = err.stack) === null || _a === void 0 ? void 0 : _a.split("\n").at(-2)) || "");
+                    _this.errorsToPresent.push((0, colorize_1.chalk)(message + "", colorize_1.Colors.red));
+                    console.log(message);
+                    console.log(_this.updated_code);
+                    // this.reportErr(chalk(message, Colors.red), "");
                 }
                 else {
                     _this.fs.unlink(_this.fileNameToUnsync, function (err) {
-                        if (err) { }
-                        ;
+                        if (err) {
+                        }
                     });
                 }
+                //! new code
+                if (_this.method_call_count === 0) {
+                    _this.reportErr((0, colorize_1.chalk)(_this.errorsToPresent.join("\n"), colorize_1.Colors.red), "");
+                }
+                else {
+                    _this.method_call_count--;
+                }
+                //! new code
             });
         }
         catch (err) {
@@ -265,6 +313,8 @@ var Type = /** @class */ (function () {
         }
         catch (err) {
             this.reportErr((0, colorize_1.chalk)("Internal Error", colorize_1.Colors.red), "");
+        }
+        finally {
         }
     };
     Type.prototype.reportErr = function (message, line) {
