@@ -6,6 +6,9 @@ const type = new Type(__filename);
 type.variable("number");
 let myVar= 3; 
 
+type.variable("object");
+let dob = new Date();
+
 type.variable("string");
 let name = "jacob"; 
 
@@ -21,6 +24,7 @@ myVar = "heeflkajds";
 
 myVar = new RegExp("hello world");
 
+dob = 382382;
 myVar = "hello";
 name = 2323
 
