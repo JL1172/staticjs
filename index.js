@@ -70,22 +70,22 @@ var Type = /** @class */ (function () {
                     instanceName = dataToParse[i];
                 }
             }
-            var colon_found_1 = false;
-            instanceName = instanceName
-                .split(" ")
-                .filter(function (n) { return n !== "let" && n !== "const"; })[0]
-                .split("")
-                .map(function (n) {
-                if (n === ":" || n === "=") {
-                    colon_found_1 = true;
-                }
-                else {
-                    if (!colon_found_1) {
-                        return n;
-                    }
-                }
-            })
-                .join("");
+            var colon_found = false;
+            // instanceName = instanceName
+            //   .split(" ")
+            //   .filter((n) => n !== "let" && n !== "const")[0]
+            //   .split("")
+            //   .map((n) => {
+            //     if (n === ":" || n === "=") {
+            //       colon_found = true;
+            //     } else {
+            //       if (!colon_found) {
+            //         return n;
+            //       }
+            //     }
+            //   })
+            //   .join("");
+            instanceName = "type";
             var method_declaration_pattern = new RegExp(instanceName + ".variable");
             for (var i = 0; i < dataToParse.length; i++) {
                 if (method_declaration_pattern.test(dataToParse[i])) {
@@ -94,7 +94,11 @@ var Type = /** @class */ (function () {
             }
         }
         catch (err) {
-            this.reportErr((0, colorize_1.chalk)("Error constructing class. Ensure file exists.", colorize_1.Colors.red), "");
+            this.reportErr((0, colorize_1.chalk)(err + "", colorize_1.Colors.red), "");
+            // this.reportErr(
+            //   chalk("Error constructing class. Ensure file exists.", Colors.red),
+            //   ""
+            // );
         }
     }
     Type.prototype.func = function (nameOfFunction, functionReturnTypes) {
@@ -109,6 +113,7 @@ var Type = /** @class */ (function () {
     };
     Type.prototype.variable = function (valueType) {
         var _a;
+        console.clear();
         try {
             switch (valueType) {
                 case "string":
@@ -189,17 +194,17 @@ var Type = /** @class */ (function () {
                     (0, colorize_1.chalk)('instance.variable("number")\n' + "const myVar = 2;", colorize_1.Colors.white) +
                     "\n");
             }
-            var colon_found_2 = false;
+            var colon_found_1 = false;
             identifier = identifier
                 .split(" ")
                 .filter(function (n) { return n !== "let" && n !== "const"; })[0]
                 .split("")
                 .map(function (n) {
                 if (n === ":" || n === "=") {
-                    colon_found_2 = true;
+                    colon_found_1 = true;
                 }
                 else {
-                    if (!colon_found_2) {
+                    if (!colon_found_1) {
                         return n;
                     }
                 }
@@ -243,9 +248,9 @@ var Type = /** @class */ (function () {
                 encoding: "utf-8",
             });
             this.cp.exec("node ".concat(newFilePath), function (err) {
-                console.log("executing again");
+                // console.log("executing again");
                 if (err) {
-                    console.log("error error");
+                    // console.log("error error");
                     //! all the recursion neeeds to be called in here
                     //! new code
                     if (_this.method_call_count === 0) {
@@ -257,27 +262,28 @@ var Type = /** @class */ (function () {
                                 _this.reportErr((0, colorize_1.chalk)(msg + "", colorize_1.Colors.red), ((_a = err.stack) === null || _a === void 0 ? void 0 : _a.split("\n").at(-2)) || "");
                             }
                             else {
-                                console.log(_this.errorsToPresent);
                                 _this.reportErr((0, colorize_1.chalk)(_this.errorsToPresent.join("\n"), colorize_1.Colors.red), "");
                             }
                         });
                     }
                     else {
                         var message = err.message.split("\n")[5] || "";
-                        console.log(err.message.split("\n"));
                         _this.errorsToPresent.push((0, colorize_1.chalk)(message + "", colorize_1.Colors.red));
                         var errorLineToMatch = err.message.split("\n")[2];
                         //recursion
-                        console.log(_this.errorsToPresent);
-                        console.log(_this.updated_code);
+                        // console.log(this.updated_code);
                         for (var i = 0; i < _this.updated_code.length; i++) {
                             if (errorLineToMatch === _this.updated_code[i]) {
                                 _this.updated_code[i] = "";
                             }
                         }
-                        console.log(_this.updated_code);
+                        // console.log(this.updated_code);
                         _this.method_call_count--;
-                        console.log("executing end");
+                        if (_this.method_call_count === 0) {
+                            _this.fs.unlinkSync(_this.fileNameToUnsync);
+                            _this.reportErr((0, colorize_1.chalk)(_this.errorsToPresent.join("\n"), colorize_1.Colors.red), "");
+                        }
+                        // console.log("executing end");
                         _this.eof();
                     }
                     //or reporting
@@ -288,7 +294,15 @@ var Type = /** @class */ (function () {
                     //   if (err) {
                     //   }
                     // });
-                    _this.eof();
+                    if (_this.method_call_count !== 0) {
+                        _this.eof();
+                    }
+                    else {
+                        _this.fs.unlink(_this.fileNameToUnsync, function (err) {
+                            if (err) {
+                            }
+                        });
+                    }
                 }
             });
         }

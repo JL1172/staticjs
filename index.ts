@@ -42,20 +42,21 @@ export class Type {
         }
       }
       let colon_found: boolean = false;
-      instanceName = instanceName
-        .split(" ")
-        .filter((n) => n !== "let" && n !== "const")[0]
-        .split("")
-        .map((n) => {
-          if (n === ":" || n === "=") {
-            colon_found = true;
-          } else {
-            if (!colon_found) {
-              return n;
-            }
-          }
-        })
-        .join("");
+      // instanceName = instanceName
+      //   .split(" ")
+      //   .filter((n) => n !== "let" && n !== "const")[0]
+      //   .split("")
+      //   .map((n) => {
+      //     if (n === ":" || n === "=") {
+      //       colon_found = true;
+      //     } else {
+      //       if (!colon_found) {
+      //         return n;
+      //       }
+      //     }
+      //   })
+      //   .join("");
+      instanceName = "type";
       const method_declaration_pattern = new RegExp(instanceName + ".variable");
       for (let i = 0; i < dataToParse.length; i++) {
         if (method_declaration_pattern.test(dataToParse[i])) {
@@ -63,10 +64,11 @@ export class Type {
         }
       }
     } catch (err) {
-      this.reportErr(
-        chalk("Error constructing class. Ensure file exists.", Colors.red),
-        ""
-      );
+      this.reportErr(chalk(err + "", Colors.red), "");
+      // this.reportErr(
+      //   chalk("Error constructing class. Ensure file exists.", Colors.red),
+      //   ""
+      // );
     }
   }
 
@@ -79,6 +81,7 @@ export class Type {
   }
 
   public variable(valueType: string): void {
+    console.clear();
     try {
       switch (valueType) {
         case "string":
@@ -240,11 +243,11 @@ export class Type {
       this.fs.writeFileSync(newFilePath, newFileToWrite, {
         encoding: "utf-8",
       });
-    
+
       this.cp.exec(`node ${newFilePath}`, (err) => {
-        console.log("executing again");
+        // console.log("executing again");
         if (err) {
-          console.log("error error")
+          // console.log("error error");
           //! all the recursion neeeds to be called in here
           //! new code
           if (this.method_call_count === 0) {
@@ -257,7 +260,6 @@ export class Type {
                   (err as Error).stack?.split("\n").at(-2) || ""
                 );
               } else {
-                console.log(this.errorsToPresent);
                 this.reportErr(
                   chalk(this.errorsToPresent.join("\n"), Colors.red),
                   ""
@@ -266,11 +268,11 @@ export class Type {
             });
           } else {
             const message = (err as Error).message.split("\n")[5] || "";
-            console.log((err as Error).message.split("\n"));
+
             this.errorsToPresent.push(chalk(message + "", Colors.red));
             const errorLineToMatch = err.message.split("\n")[2];
             //recursion
-            console.log(this.errorsToPresent);
+
             // console.log(this.updated_code);
             for (let i = 0; i < this.updated_code.length; i++) {
               if (errorLineToMatch === this.updated_code[i]) {
@@ -279,7 +281,14 @@ export class Type {
             }
             // console.log(this.updated_code);
             this.method_call_count--;
-            console.log("executing end")
+            if (this.method_call_count === 0) {
+              this.fs.unlinkSync(this.fileNameToUnsync);
+              this.reportErr(
+                chalk(this.errorsToPresent.join("\n"), Colors.red),
+                ""
+              );
+            }
+            // console.log("executing end");
             this.eof();
           }
           //or reporting
@@ -290,7 +299,14 @@ export class Type {
           //   if (err) {
           //   }
           // });
-          this.eof();
+          if (this.method_call_count !== 0) {
+            this.eof();
+          } else {
+            this.fs.unlink(this.fileNameToUnsync, (err) => {
+              if (err) {
+              }
+            });
+          }
         }
       });
     } catch (err) {
