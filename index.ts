@@ -245,41 +245,18 @@ export class Type {
       });
 
       this.cp.exec(`node ${newFilePath}`, (err) => {
-        // console.log("executing again");
-        if (err) {
-          // console.log("error error");
-          //! all the recursion neeeds to be called in here
-          //! new code
-          if (this.method_call_count === 0) {
-            //! new code
-            this.fs.unlink(this.fileNameToUnsync, (err) => {
-              if (err) {
-                const msg = err.message;
-                this.reportErr(
-                  chalk(msg + "", Colors.red),
-                  (err as Error).stack?.split("\n").at(-2) || ""
-                );
-              } else {
-                this.reportErr(
-                  chalk(this.errorsToPresent.join("\n"), Colors.red),
-                  ""
-                );
-              }
-            });
-          } else {
+     
+        if (err) {      
             const message = (err as Error).message.split("\n")[5] || "";
-
             this.errorsToPresent.push(chalk(message + "", Colors.red));
             const errorLineToMatch = err.message.split("\n")[2];
-            //recursion
-
-            // console.log(this.updated_code);
+    
             for (let i = 0; i < this.updated_code.length; i++) {
               if (errorLineToMatch === this.updated_code[i]) {
                 this.updated_code[i] = "";
               }
             }
-            // console.log(this.updated_code);
+            
             this.method_call_count--;
             if (this.method_call_count === 0) {
               this.fs.unlinkSync(this.fileNameToUnsync);
@@ -288,24 +265,15 @@ export class Type {
                 ""
               );
             }
-            // console.log("executing end");
-            this.eof();
-          }
-          //or reporting
 
-          //! all the recursion neeeds to be called in here
+            this.eof();
+        
         } else {
-          // this.fs.unlink(this.fileNameToUnsync, (err) => {
-          //   if (err) {
-          //   }
-          // });
+        
           if (this.method_call_count !== 0) {
             this.eof();
           } else {
-            this.fs.unlink(this.fileNameToUnsync, (err) => {
-              if (err) {
-              }
-            });
+            this.fs.unlinkSync(this.fileNameToUnsync)
           }
         }
       });

@@ -248,60 +248,44 @@ var Type = /** @class */ (function () {
                 encoding: "utf-8",
             });
             this.cp.exec("node ".concat(newFilePath), function (err) {
-                // console.log("executing again");
                 if (err) {
-                    // console.log("error error");
-                    //! all the recursion neeeds to be called in here
-                    //! new code
+                    // if (this.method_call_count === 0) {
+                    //   this.fs.unlink(this.fileNameToUnsync, (err) => {
+                    //     if (err) {
+                    //       const msg = err.message;
+                    //       this.reportErr(
+                    //         chalk(msg + "", Colors.red),
+                    //         (err as Error).stack?.split("\n").at(-2) || ""
+                    //       );
+                    //     } else {
+                    //       this.reportErr(
+                    //         chalk(this.errorsToPresent.join("\n"), Colors.red),
+                    //         ""
+                    //       );
+                    //     }
+                    //   });
+                    // } else {
+                    var message = err.message.split("\n")[5] || "";
+                    _this.errorsToPresent.push((0, colorize_1.chalk)(message + "", colorize_1.Colors.red));
+                    var errorLineToMatch = err.message.split("\n")[2];
+                    for (var i = 0; i < _this.updated_code.length; i++) {
+                        if (errorLineToMatch === _this.updated_code[i]) {
+                            _this.updated_code[i] = "";
+                        }
+                    }
+                    _this.method_call_count--;
                     if (_this.method_call_count === 0) {
-                        //! new code
-                        _this.fs.unlink(_this.fileNameToUnsync, function (err) {
-                            var _a;
-                            if (err) {
-                                var msg = err.message;
-                                _this.reportErr((0, colorize_1.chalk)(msg + "", colorize_1.Colors.red), ((_a = err.stack) === null || _a === void 0 ? void 0 : _a.split("\n").at(-2)) || "");
-                            }
-                            else {
-                                _this.reportErr((0, colorize_1.chalk)(_this.errorsToPresent.join("\n"), colorize_1.Colors.red), "");
-                            }
-                        });
+                        _this.fs.unlinkSync(_this.fileNameToUnsync);
+                        _this.reportErr((0, colorize_1.chalk)(_this.errorsToPresent.join("\n"), colorize_1.Colors.red), "");
                     }
-                    else {
-                        var message = err.message.split("\n")[5] || "";
-                        _this.errorsToPresent.push((0, colorize_1.chalk)(message + "", colorize_1.Colors.red));
-                        var errorLineToMatch = err.message.split("\n")[2];
-                        //recursion
-                        // console.log(this.updated_code);
-                        for (var i = 0; i < _this.updated_code.length; i++) {
-                            if (errorLineToMatch === _this.updated_code[i]) {
-                                _this.updated_code[i] = "";
-                            }
-                        }
-                        // console.log(this.updated_code);
-                        _this.method_call_count--;
-                        if (_this.method_call_count === 0) {
-                            _this.fs.unlinkSync(_this.fileNameToUnsync);
-                            _this.reportErr((0, colorize_1.chalk)(_this.errorsToPresent.join("\n"), colorize_1.Colors.red), "");
-                        }
-                        // console.log("executing end");
-                        _this.eof();
-                    }
-                    //or reporting
-                    //! all the recursion neeeds to be called in here
+                    _this.eof();
                 }
                 else {
-                    // this.fs.unlink(this.fileNameToUnsync, (err) => {
-                    //   if (err) {
-                    //   }
-                    // });
                     if (_this.method_call_count !== 0) {
                         _this.eof();
                     }
                     else {
-                        _this.fs.unlink(_this.fileNameToUnsync, function (err) {
-                            if (err) {
-                            }
-                        });
+                        _this.fs.unlinkSync(_this.fileNameToUnsync);
                     }
                 }
             });
