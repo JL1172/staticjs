@@ -10,6 +10,7 @@ import * as cp from "child_process";
   instance.
   variable();
 */
+//* 2. need to figure out ENOENT error. need to reread logic of everything having error if there is less than all of the possible type errors. if i have 3 static type checks and not all of them are false, then it throws error.
 
 export class Type {
   private readonly fs = fs;
