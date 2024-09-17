@@ -21,7 +21,9 @@ export class Type {
   private fileNameToUnsync: string;
   private errorsToPresent: string[] = [];
   private method_call_count: number = 0;
+
   constructor(fileName: string) {
+
     if (!fileName) {
       this.reportErr(
         chalk(
@@ -51,9 +53,7 @@ export class Type {
           }
         }
       }
-      // if (!instanceName) {
-      //   throw new Error("Error instantiating class");
-      // }
+
       instanceName = instanceName
         .split(" ")
         .filter((n) => n !== "let" && n !== "const")[0]
@@ -69,7 +69,6 @@ export class Type {
         })
         .join("");
 
-      // instanceName = "type";
       const method_declaration_pattern = new RegExp(instanceName + ".variable");
       for (let i = 0; i < dataToParse.length; i++) {
         if (method_declaration_pattern.test(dataToParse[i])) {
@@ -128,7 +127,7 @@ export class Type {
       } else {
         data = this.updated_code;
       }
-      //! look at diff if error
+
       let formattedData: string[];
       if (Array.isArray(data)) {
         formattedData = data.filter((n) => n && !/\/\//.test(n));
@@ -137,7 +136,7 @@ export class Type {
           .split("\n")
           .filter((n) => n && !/\/\//.test(n));
       }
-      //! look at diff if error
+
       const class_instantiation_pattern = /new Type/;
       if (!this.instance_name) {
         for (let i: number = 0; i < formattedData.length; i++) {
@@ -292,7 +291,7 @@ export class Type {
         );
       }
     }
-  }
+  } 
 
   private validateVariableDeclaration(line_of_code: string): boolean {
     const tokenized_code = line_of_code.split(" ");

@@ -78,9 +78,6 @@ var Type = /** @class */ (function () {
                     }
                 }
             }
-            // if (!instanceName) {
-            //   throw new Error("Error instantiating class");
-            // }
             instanceName = instanceName
                 .split(" ")
                 .filter(function (n) { return n !== "let" && n !== "const"; })[0]
@@ -96,7 +93,6 @@ var Type = /** @class */ (function () {
                 }
             })
                 .join("");
-            // instanceName = "type";
             var method_declaration_pattern = new RegExp(instanceName + ".variable");
             for (var i = 0; i < dataToParse.length; i++) {
                 if (method_declaration_pattern.test(dataToParse[i])) {
@@ -158,7 +154,6 @@ var Type = /** @class */ (function () {
             else {
                 data = this.updated_code;
             }
-            //! look at diff if error
             var formattedData = void 0;
             if (Array.isArray(data)) {
                 formattedData = data.filter(function (n) { return n && !/\/\//.test(n); });
@@ -168,7 +163,6 @@ var Type = /** @class */ (function () {
                     .split("\n")
                     .filter(function (n) { return n && !/\/\//.test(n); });
             }
-            //! look at diff if error
             var class_instantiation_pattern = /new Type/;
             if (!this.instance_name) {
                 for (var i = 0; i < formattedData.length; i++) {
