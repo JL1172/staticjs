@@ -23,7 +23,6 @@ export class Type {
   private method_call_count: number = 0;
 
   constructor(fileName: string) {
-
     if (!fileName) {
       this.reportErr(
         chalk(
@@ -283,7 +282,7 @@ export class Type {
       });
     } catch (err) {
       const code = err["code"];
-      if (!code) {
+      if (!code || code !== "ENOENT") {
         const message = (err as Error).message || "";
         this.reportErr(
           chalk(message + "", Colors.red),
@@ -291,7 +290,7 @@ export class Type {
         );
       }
     }
-  } 
+  }
 
   private validateVariableDeclaration(line_of_code: string): boolean {
     const tokenized_code = line_of_code.split(" ");
@@ -327,7 +326,6 @@ export class Type {
   }
 
   private reportErr(message: string, line: string): void {
-    console.clear();
     console.error(
       chalk(
         `

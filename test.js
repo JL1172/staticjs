@@ -24,8 +24,8 @@ myVar = "heeflkajds";
 
 myVar = new RegExp("hello world");
 
-dob = 382382;
+dob = {};
 myVar = "hello";
-name = 2323
+name = 1;
 
 type.eof();
