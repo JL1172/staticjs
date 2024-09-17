@@ -35,31 +35,41 @@ export class Type {
     try {
       const data = this.fs.readFileSync(this.path, { encoding: "utf-8" });
       const dataToParse = data.split("\n");
-      let instanceName: string;
+      let instanceName: string = "";
       for (let i = 0; i < dataToParse.length; i++) {
-        if (/new Type/.test(dataToParse[i])) {
+        if (/new Type(__filename)/.test(dataToParse[i])) {
           instanceName = dataToParse[i];
         }
       }
+
       let colon_found: boolean = false;
-      //todo need to figure out how to parse this without throwing any error
-      // if (!this.instance_name) {
-      // instanceName = instanceName
-      //   .split(" ")
-      //   .filter((n) => n !== "let" && n !== "const")[0]
-      //   .split("")
-      //   .map((n) => {
-      //     if (n === ":" || n === "=") {
-      //       colon_found = true;
-      //     } else {
-      //       if (!colon_found) {
-      //         return n;
-      //       }
-      //     }
-      //   })
-      //   .join("");
-      // } 
-      instanceName = "type";
+
+      if (!instanceName) {
+        for (let i = 0; i < dataToParse.length; i++) {
+          if (/new Type(__filename)/.test(dataToParse[i])) {
+            instanceName = dataToParse[i];
+          }
+        }
+      }
+      // if (!instanceName) {
+      //   throw new Error("Error instantiating class");
+      // }
+      instanceName = instanceName
+        .split(" ")
+        .filter((n) => n !== "let" && n !== "const")[0]
+        .split("")
+        .map((n) => {
+          if (n === ":" || n === "=") {
+            colon_found = true;
+          } else {
+            if (!colon_found) {
+              return n;
+            }
+          }
+        })
+        .join("");
+
+      // instanceName = "type";
       const method_declaration_pattern = new RegExp(instanceName + ".variable");
       for (let i = 0; i < dataToParse.length; i++) {
         if (method_declaration_pattern.test(dataToParse[i])) {
@@ -243,35 +253,32 @@ export class Type {
       });
 
       this.cp.exec(`node ${newFilePath}`, (err) => {
-     
-        if (err) {      
-            const message = (err as Error).message.split("\n")[5] || "";
-            this.errorsToPresent.push(chalk(message + "", Colors.red));
-            const errorLineToMatch = err.message.split("\n")[2];
-    
-            for (let i = 0; i < this.updated_code.length; i++) {
-              if (errorLineToMatch === this.updated_code[i]) {
-                this.updated_code[i] = "";
-              }
-            }
-            
-            this.method_call_count--;
-            if (this.method_call_count === 0) {
-              this.fs.unlinkSync(this.fileNameToUnsync);
-              this.reportErr(
-                chalk(this.errorsToPresent.join("\n"), Colors.red),
-                ""
-              );
-            }
+        if (err) {
+          const message = (err as Error)?.message.split("\n")[5] || "";
+          this.errorsToPresent.push(chalk(message + "", Colors.red));
+          const errorLineToMatch = err?.message.split("\n")[2] || "";
 
-            this.eof();
-        
+          for (let i = 0; i < this.updated_code.length; i++) {
+            if (errorLineToMatch === this.updated_code[i]) {
+              this.updated_code[i] = "";
+            }
+          }
+
+          this.method_call_count--;
+          if (this.method_call_count === 0) {
+            this.fs.unlinkSync(this.fileNameToUnsync);
+            this.reportErr(
+              chalk(this.errorsToPresent.join("\n"), Colors.red),
+              ""
+            );
+          }
+
+          this.eof();
         } else {
-        
           if (this.method_call_count !== 0) {
             this.eof();
           } else {
-            this.fs.unlinkSync(this.fileNameToUnsync)
+            this.fs.unlinkSync(this.fileNameToUnsync);
           }
         }
       });
@@ -322,13 +329,18 @@ export class Type {
 
   private reportErr(message: string, line: string): void {
     console.clear();
-    console.error(chalk(`
+    console.error(
+      chalk(
+        `
 ░██████╗████████╗░█████╗░████████╗██╗░█████╗░░░░░░██╗░██████╗
 ██╔════╝╚══██╔══╝██╔══██╗╚══██╔══╝██║██╔══██╗░░░░░██║██╔════╝
 ╚█████╗░░░░██║░░░███████║░░░██║░░░██║██║░░╚═╝░░░░░██║╚█████╗░
 ░╚═══██╗░░░██║░░░██╔══██║░░░██║░░░██║██║░░██╗██╗░░██║░╚═══██╗
 ██████╔╝░░░██║░░░██║░░██║░░░██║░░░██║╚█████╔╝╚█████╔╝██████╔╝
-╚═════╝░░░░╚═╝░░░╚═╝░░╚═╝░░░╚═╝░░░╚═╝░╚════╝░░╚════╝░╚═════╝░`, Colors.blue));
+╚═════╝░░░░╚═╝░░░╚═╝░░╚═╝░░░╚═╝░░░╚═╝░╚════╝░░╚════╝░╚═════╝░`,
+        Colors.blue
+      )
+    );
     console.error(`${message}\n${chalk("LINE: " + line + "]", Colors.cyan)}`);
     console.trace();
     process.exit(1);
