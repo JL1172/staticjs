@@ -8,6 +8,7 @@ export class Static {
   private readonly fs: typeof fs = fs;
   private readonly cp = exec;
   private formatted_code: string[];
+  private variable_declarations: string[] = [];
 
   constructor(fileName: string) {
     if (fileName.trim().length === 0) {
@@ -21,7 +22,12 @@ export class Static {
 
   public enable(): void {
     this.validateFile();
+    if (!this.formatted_code || this.formatted_code.length === 0) {
+      this.reportFileReadError("Error reading file and parsing code");
+    }
     this.removeComments();
+    this.findVariableDeclarations();
+    this.parseVariableDeclarations();
     this.parseFile();
   }
 
@@ -35,6 +41,7 @@ export class Static {
       this.reportFileError(err["message"]);
     }
   }
+
   private removeComments(): void {
     const codeToParse: string[] = this.formatted_code.join("\n").split("");
     const lengthOfCode: number = codeToParse.length;
@@ -53,7 +60,7 @@ export class Static {
           } else if (codeToParse[i + 1] === "*") {
             let j = i;
             while (codeToParse[j] !== "*" || codeToParse[j + 1] !== "/") {
-                j++;
+              j++;
             }
             i = j;
           }
@@ -62,12 +69,95 @@ export class Static {
           updated_code.push(codeToParse[i]);
       }
     }
-    this.formatted_code = updated_code.join("").split("\n").filter(n => n);
-  }
-  private parseFile(): void {
-    console.log(this.formatted_code);
+    this.formatted_code = updated_code
+      .join("")
+      .split("\n")
+      .filter((n) => n);
   }
 
+  private findVariableDeclarations(): void {
+    const constKeyword: RegExp = /const/;
+    const letKeyword: RegExp = /let/;
+    const lengthOfCode: number = this.formatted_code.length;
+    for (let i: number = 0; i < lengthOfCode; i++) {
+      const currentLineOfCode: string = this.formatted_code[i];
+      if (
+        letKeyword.test(currentLineOfCode) ||
+        constKeyword.test(currentLineOfCode)
+      ) {
+        this.variable_declarations.push(currentLineOfCode);
+      }
+    }
+  }
+
+  private parseVariableDeclarations(): void {
+    const lengthOfVariableDeclarationArr: number =
+      this.variable_declarations.length;
+    if (lengthOfVariableDeclarationArr !== 0) {
+      for (let i: number = 0; i < lengthOfVariableDeclarationArr; i++) {
+        const splitCode: string[] = this.variable_declarations[i].split(" ");
+        const lastValue: string = splitCode[splitCode.length - 1].replace(/["';]/g, '');
+        const secondToLastValue = splitCode[splitCode.length - 2].split("");
+        if (secondToLastValue[secondToLastValue.length - 1] === ";") {
+          switch (lastValue) {
+            case "string":
+              break;
+            case "number":
+              break;
+            case "bigint":
+              break;
+            case "object":
+              break;
+            case "function":
+              break;
+            case "boolean":
+              break;
+            case "undefined":
+              break;
+            case "null":
+              break;
+            default:
+              //todo eventually add custom typing
+              this.reportStaticTypingError(
+                "Error parsing statement following variable declaration, ensure statement is valid composite or primitive type" + "\n" + 
+                "recieved: [" + lastValue + "]"
+              );
+          }
+        } 
+      }
+    }
+  }
+
+  private parseFile(): void {
+    // console.log(this.formatted_code);
+  }
+
+  private reportStaticTypingError(
+    message: string,
+    errType: string = "StaticTypingError"
+  ): void {
+    const messageToPresent =
+      chalk("[ErrorType]: ", Colors.bgRed) +
+      chalk(errType, Colors.bgRed) +
+      "\n" +
+      chalk(message, Colors.red);
+    console.error(messageToPresent);
+    console.trace();
+    process.exit(1);
+  }
+  private reportFileReadError(
+    message: string,
+    errType: string = "FileReadError"
+  ): void {
+    const messageToPresent =
+      chalk("[ErrorType]: ", Colors.bgRed) +
+      chalk(errType, Colors.bgRed) +
+      "\n" +
+      chalk(message, Colors.red);
+    console.error(messageToPresent);
+    console.trace();
+    process.exit(1);
+  }
   private reportFileError(
     message: string,
     errType: string = "FileError"
