@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import { chalk, Colors } from "./lib/colorize";
+import { chalk, Colors } from "../lib/colorize";
 import * as cp from "child_process";
 
 //! all errors are self contained to avoid weird error and bug propagation
