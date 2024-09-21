@@ -4,7 +4,7 @@ import { Static } from "./index";
 new Static(__filename).enable();
 /*ignore this as well
 */
-let my_name: any = "jacob;"; "string";
+let my_name: any = "jacob has a cool car;" + "[]"; "string";
 //asdfoihajsdofhasdfasldfkjnasdflkasjdfasdlfkj
 /*
 

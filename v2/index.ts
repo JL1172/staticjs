@@ -120,7 +120,9 @@ export class Static {
               //todo eventually add custom typing
               this.reportStaticTypingError(
                 "Error parsing statement following variable declaration, ensure statement is valid composite or primitive type" + "\n" + 
-                "recieved: [" + lastValue + "]"
+                "Recieved: [" + lastValue + "]" + "\n" + 
+                "If this message does not apply, ensure that semi colon follows variable declaration, the correct format is the following: " + "\n" +
+                chalk("const identifier = \"name\"; \"string\";", Colors.bgCyan)
               );
           }
         } 
