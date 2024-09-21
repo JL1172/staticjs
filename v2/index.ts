@@ -3,12 +3,33 @@ import { exec } from "child_process";
 import { Colors } from "../lib/colorize";
 import { chalk } from "../lib/colorize";
 
+abstract class Node {
+  public identifier: string;
+  public value: string;
+  public enforced_type: string;
+  constructor(id: string, val: string, type: string) {
+    this.identifier = id;
+    this.value = val;
+    this.enforced_type = type;
+  }
+}
+
+class VariableNode extends Node {
+  public identifier: string;
+  public value: string;
+  public enforced_type: string;
+  constructor(id: string, val: string, type: string) {
+    super(id, val, type);
+  }
+}
+
 export class Static {
   private path: string = "";
   private readonly fs: typeof fs = fs;
   private readonly cp = exec;
   private formatted_code: string[];
   private variable_declarations: string[] = [];
+  private variable_node: VariableNode[];
 
   constructor(fileName: string) {
     if (fileName.trim().length === 0) {
@@ -95,9 +116,23 @@ export class Static {
       this.variable_declarations.length;
     if (lengthOfVariableDeclarationArr !== 0) {
       for (let i: number = 0; i < lengthOfVariableDeclarationArr; i++) {
-        const splitCode: string[] = this.variable_declarations[i].split(" ");
-        const lastValue: string = splitCode[splitCode.length - 1].replace(/["';]/g, '');
-        const secondToLastValue = splitCode[splitCode.length - 2].split("");
+        const splitCode: string[] = this.variable_declarations[i]
+          .split(" ")
+          .filter((n) => n);
+        let lastValue: string = splitCode[splitCode.length - 1].replace(
+          /["';]/g,
+          ""
+        );
+
+        let secondToLastValue = splitCode[splitCode.length - 2].split("");
+        if (!lastValue) {
+          let idx: number = 1;
+          while (splitCode[splitCode.length - idx] === ";") {
+            idx++;
+          }
+          lastValue = splitCode[splitCode.length - idx].replace(/["';]/g, "");
+          secondToLastValue = splitCode[splitCode.length - (idx + 1)].split("");
+        }
         if (secondToLastValue[secondToLastValue.length - 1] === ";") {
           switch (lastValue) {
             case "string":
@@ -119,13 +154,39 @@ export class Static {
             default:
               //todo eventually add custom typing
               this.reportStaticTypingError(
-                "Error parsing statement following variable declaration, ensure statement is valid composite or primitive type" + "\n" + 
-                "Recieved: [" + lastValue + "]" + "\n" + 
-                "If this message does not apply, ensure that semi colon follows variable declaration, the correct format is the following: " + "\n" +
-                chalk("const identifier = \"name\"; \"string\";", Colors.bgCyan)
+                "Error parsing statement following variable declaration, ensure statement is valid composite or primitive type" +
+                  "\n" +
+                  "Recieved: [" +
+                  lastValue +
+                  "]" +
+                  "\n" +
+                  "If this message does not apply, ensure that semi colon follows variable declaration, the correct format is the following: " +
+                  "\n" +
+                  chalk('const identifier = "name"; "string";', Colors.bgCyan)
               );
           }
-        } 
+          
+          let identifier: string = "";
+          const constKeyword: RegExp = /const/;
+          const letKeyword: RegExp = /let/;
+          for (let i: number = 0; i < splitCode.length; i++) {
+            const currentToken = splitCode[i];
+            if (
+              constKeyword.test(currentToken) ||
+              letKeyword.test(currentToken)
+            ) {
+              identifier = splitCode[i + 1].replace(/[:]/g, "");
+              break;
+            }
+          }
+          const valueOfVariable: string = "";
+          const indexOfAssignmentOperator =
+            splitCode.join("").split("").indexOf("=") + 1;
+
+          let j: number = 0;
+          // const indexOfAssignmentOperator: number = splitCode;
+          //   this.variable_node.push(new VariableNode("", "", lastValue));
+        }
       }
     }
   }
