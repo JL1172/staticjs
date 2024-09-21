@@ -29,7 +29,7 @@ export class Static {
   private readonly cp = exec;
   private formatted_code: string[];
   private variable_declarations: string[] = [];
-  private variable_node: VariableNode[];
+  private variable_node: VariableNode[] = [];
 
   constructor(fileName: string) {
     if (fileName.trim().length === 0) {
@@ -165,7 +165,7 @@ export class Static {
                   chalk('const identifier = "name"; "string";', Colors.bgCyan)
               );
           }
-          
+
           let identifier: string = "";
           const constKeyword: RegExp = /const/;
           const letKeyword: RegExp = /let/;
@@ -175,24 +175,48 @@ export class Static {
               constKeyword.test(currentToken) ||
               letKeyword.test(currentToken)
             ) {
-              identifier = splitCode[i + 1].replace(/[:]/g, "");
+              identifier = splitCode[i + 1];
               break;
             }
           }
-          const valueOfVariable: string = "";
+          let assignmentFound: boolean = false;
+          identifier = identifier.split("").map((n) => {
+            if (n === "=" || n === ":") {
+              assignmentFound = true;
+            }
+            if (n !== "=" && assignmentFound === false) {
+              return n;
+            }
+          }).join("");
+          
+          let valueOfVariable: string[] | string = [];
+          const characterCode: string[] = splitCode.join("").split("");
           const indexOfAssignmentOperator =
-            splitCode.join("").split("").indexOf("=") + 1;
-
-          let j: number = 0;
-          // const indexOfAssignmentOperator: number = splitCode;
-          //   this.variable_node.push(new VariableNode("", "", lastValue));
+            characterCode.indexOf("=") + 1;
+          valueOfVariable = characterCode.slice(indexOfAssignmentOperator);
+          valueOfVariable.reverse();
+        //   this.force_quit_for_dev_purposed_only();
+          let h = -1; let k = -1;
+          let index = 0;
+          while (h === -1 || k === -1) {
+            if (valueOfVariable[index] === ";") {
+                if (h === -1) {
+                    h = index;
+                } else if (h !== -1 && k === -1) {
+                    k = index;
+                }
+            }
+            index++;
+          }
+          valueOfVariable = valueOfVariable.slice(k).reverse().join("");
+            this.variable_node.push(new VariableNode(identifier,valueOfVariable, lastValue));
         }
       }
     }
   }
 
   private parseFile(): void {
-    // console.log(this.formatted_code);
+    console.log(this.variable_node);
   }
 
   private reportStaticTypingError(

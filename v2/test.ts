@@ -6,7 +6,7 @@ new Static(__filename).enable();
 */
 let my_name : any = "jacob has a cool car;" + "[]"; "string"   ;
 
-let age=2; "number";
+let         age=2; "number";
 //asdfoihajsdofhasdfasldfkjnasdflkasjdfasdlfkj
 /*
 
