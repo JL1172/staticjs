@@ -7,7 +7,7 @@ export class Static {
   private path: string = "";
   private readonly fs: typeof fs = fs;
   private readonly cp = exec;
-  private formatted_code: string = "";
+  private formatted_code: string[];
 
   constructor(fileName: string) {
     if (fileName.trim().length === 0) {
@@ -21,20 +21,51 @@ export class Static {
 
   public enable(): void {
     this.validateFile();
+    this.removeComments();
     this.parseFile();
   }
+
   private validateFile(): void {
     try {
       const data: string = this.fs.readFileSync(this.path, {
         encoding: "utf-8",
       });
-      console.log(data);
+      this.formatted_code = data.split("\n").filter((n) => n);
     } catch (err) {
-      console.log(err);
+      this.reportFileError(err["message"]);
     }
   }
+  private removeComments(): void {
+    const codeToParse: string[] = this.formatted_code.join("\n").split("");
+    const lengthOfCode: number = codeToParse.length;
+    const updated_code: string[] = [];
+
+    for (let i: number = 0; i < lengthOfCode; i++) {
+      const currentLineOfCode = codeToParse[i];
+      switch (currentLineOfCode) {
+        case "/":
+          if (codeToParse[i + 1] === "/") {
+            let j = i;
+            while (codeToParse[j] !== "\n") {
+              j++;
+            }
+            i = j;
+          } else if (codeToParse[i + 1] === "*") {
+            let j = i;
+            while (codeToParse[j] !== "*" || codeToParse[j + 1] !== "/") {
+                j++;
+            }
+            i = j;
+          }
+          break;
+        default:
+          updated_code.push(codeToParse[i]);
+      }
+    }
+    this.formatted_code = updated_code.join("").split("\n").filter(n => n);
+  }
   private parseFile(): void {
-    console.log("parsing file");
+    console.log(this.formatted_code);
   }
 
   private reportFileError(
