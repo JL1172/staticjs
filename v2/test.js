@@ -1,10 +1,9 @@
-import { Console } from "console";
-import { Static } from "./index";
+const {Static} = require("./index");
 
-new Static(__filename).enable();
+new Static(__filename)   .enable();
 /*ignore this as well
 */
-let my_name : any = "jacob has a cool car;" + "[]"; "string"   ;
+let my_name = "jacob has a cool car;" + "[]"; "string"   ;
 
 let         age=2; "number";
 //asdfoihajsdofhasdfasldfkjnasdflkasjdfasdlfkj

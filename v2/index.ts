@@ -31,6 +31,7 @@ export class Static {
   private variable_declarations: string[] = [];
   private variable_node: VariableNode[] = [];
   private newCode: string = "";
+  private newCodePath: string = "";
 
   constructor(fileName: string) {
     if (fileName.trim().length === 0) {
@@ -51,8 +52,11 @@ export class Static {
     this.findVariableDeclarations();
     this.parseVariableDeclarations();
     this.createCode();
-    this.executeNewCode();
+    this.removeImports();
+    console.log(this.formatted_code);
+    this.force_quit_for_dev_purposed_only();
     this.writeNewCodeToFile();
+    this.executeNewCode();
     // this.parseFile();
   }
 
@@ -225,55 +229,67 @@ export class Static {
   //got to figure out how to evaluate types
 
   private createCode(): void {
-    let newCode: string = "";
     let i: number = 0;
-    while (i < this.variable_declarations.length) {
-      const currentNode = this.variable_node[i];
-      const variableDeclaration =
-        "var " + currentNode.identifier + " = " + currentNode.value + "\n";
-      newCode += variableDeclaration;
-      i++;
-    }
-    i = 0;
-    while (i < this.variable_declarations.length) {
+    while (i < this.variable_declarations.length - 1) {
       const currentNode = this.variable_node[i];
       const currentIfStatement =
         "if (typeof " +
         currentNode.identifier +
-        " !== " +
-        currentNode.enforced_type +
+        " !== " + "\"" +
+        currentNode.enforced_type + "\"" +
         ") " +
-        "{ \n" +
+        "{ " +
         "const type = " +
         "typeof " +
         currentNode.identifier +
-        "; \n" +
-        "console.log(\"Static Typing Error: Expected Type: [" +
+        "; " +
+        'console.log("Static Typing Error: Expected Type: [' +
         currentNode.enforced_type +
-        "\] Recieved Type: [ \" + type + \" ]" +
-        "\");" +
-        "\n}" +
-        "\n";
-      newCode += currentIfStatement;
+        '] Recieved Type: [ " + type + " ]' +
+        '");' +
+        "}";
+      this.formatted_code.push(currentIfStatement);
       i++;
     }
-    this.newCode = newCode;
+    
+    this.newCode = this.formatted_code.join("\n");
     if (!this.newCode) {
       this.reportCreateCodeError("Internal Error");
     }
   }
+  private removeImports(): void {
+    const importRegex: RegExp = /const\s+{\s*Static\s*}\s*/;
+    const methodCall: RegExp = /\s*new\s+Static\s*\(\s*__filename\s*\)\s*\.\s*enable\s*\(\s*\)\s*/; 
+    this.formatted_code = this.formatted_code.filter(n => !importRegex.test(n) && !methodCall.test(n));
+  }
   private writeNewCodeToFile(): void {
     try {
-      const splitpath: string[] = this.path.split("\/");
+      const splitpath: string[] = this.path.split("/");
       splitpath[splitpath.length - 1] = new Date().toISOString() + ".js";
-      const newFilePath = splitpath.join("\/");
-      this.fs.writeFileSync(newFilePath, this.newCode, {encoding: 'utf-8'});
+      const newFilePath = splitpath.join("/");
+      this.newCodePath = newFilePath;
+      this.fs.writeFileSync(newFilePath, this.newCode, { encoding: "utf-8" });
     } catch (err) {
       this.reportWriteFileError("Error Writing Code To File");
     }
   }
   private executeNewCode(): void {
-    
+    try {
+      console.log(this.newCode);
+      this.cp("node " + this.newCodePath, (error, stdout, stderr) => {
+        if (error) {
+          this.fs.unlinkSync(this.newCodePath);
+          throw new Error(error + "");
+        } else {
+          console.log("stdout: ", stdout);
+          console.log("stderr: ", stderr);
+          this.fs.unlinkSync(this.newCodePath);
+        }
+      });
+    } catch (err) {
+      console.log("erorror");
+      console.log(err);
+    }
   }
   private parseFile(): void {
     console.log(this.variable_node);
