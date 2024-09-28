@@ -51,6 +51,8 @@ export class Static {
     this.findVariableDeclarations();
     this.parseVariableDeclarations();
     this.createCode();
+    this.executeNewCode();
+    this.writeNewCodeToFile();
     // this.parseFile();
   }
 
@@ -260,11 +262,35 @@ export class Static {
       this.reportCreateCodeError("Internal Error");
     }
   }
-  
+  private writeNewCodeToFile(): void {
+    try {
+      const splitpath: string[] = this.path.split("\/");
+      splitpath[splitpath.length - 1] = new Date().toISOString() + ".js";
+      const newFilePath = splitpath.join("\/");
+      this.fs.writeFileSync(newFilePath, this.newCode, {encoding: 'utf-8'});
+    } catch (err) {
+      this.reportWriteFileError("Error Writing Code To File");
+    }
+  }
+  private executeNewCode(): void {
+    
+  }
   private parseFile(): void {
     console.log(this.variable_node);
   }
-
+  private reportWriteFileError(
+    message: string,
+    errType: string = "WriteFileError"
+  ): void {
+    const messageToPresent =
+      chalk("[ErrorType]: ", Colors.bgRed) +
+      chalk(errType, Colors.bgRed) +
+      "\n" +
+      chalk(message, Colors.red);
+    console.error(messageToPresent);
+    console.trace();
+    process.exit(1);
+  }
   private reportStaticTypingError(
     message: string,
     errType: string = "StaticTypingError"
