@@ -30,6 +30,7 @@ export class Static {
   private formatted_code: string[];
   private variable_declarations: string[] = [];
   private variable_node: VariableNode[] = [];
+  private newCode: string = "";
 
   constructor(fileName: string) {
     if (fileName.trim().length === 0) {
@@ -49,7 +50,8 @@ export class Static {
     this.removeComments();
     this.findVariableDeclarations();
     this.parseVariableDeclarations();
-    this.parseFile();
+    this.createCode();
+    // this.parseFile();
   }
 
   private validateFile(): void {
@@ -179,42 +181,86 @@ export class Static {
             }
           }
           let assignmentFound: boolean = false;
-          identifier = identifier.split("").map((n) => {
-            if (n === "=" || n === ":") {
-              assignmentFound = true;
-            }
-            if (n !== "=" && assignmentFound === false) {
-              return n;
-            }
-          }).join("");
-          
+          identifier = identifier
+            .split("")
+            .map((n) => {
+              if (n === "=" || n === ":") {
+                assignmentFound = true;
+              }
+              if (n !== "=" && assignmentFound === false) {
+                return n;
+              }
+            })
+            .join("");
+
           let valueOfVariable: string[] | string = [];
           const characterCode: string[] = splitCode.join("").split("");
-          const indexOfAssignmentOperator =
-            characterCode.indexOf("=") + 1;
+          const indexOfAssignmentOperator = characterCode.indexOf("=") + 1;
           valueOfVariable = characterCode.slice(indexOfAssignmentOperator);
           valueOfVariable.reverse();
-        //   this.force_quit_for_dev_purposed_only();
-          let h = -1; let k = -1;
+          //   this.force_quit_for_dev_purposed_only();
+          let h = -1;
+          let k = -1;
           let index = 0;
-          console.log(valueOfVariable);
           while (h === -1 || k === -1) {
             if (valueOfVariable[index] === ";") {
-                if (h === -1) {
-                    h = index;
-                } else if (h !== -1 && k === -1) {
-                    k = index;
-                }
+              if (h === -1) {
+                h = index;
+              } else if (h !== -1 && k === -1) {
+                k = index;
+              }
             }
             index++;
           }
           valueOfVariable = valueOfVariable.slice(k).reverse().join("");
-            this.variable_node.push(new VariableNode(identifier,valueOfVariable, lastValue));
+          this.variable_node.push(
+            new VariableNode(identifier, valueOfVariable, lastValue)
+          );
         }
       }
     }
   }
+  //got to figure out how to evaluate types
 
+  private createCode(): void {
+    let newCode: string = "";
+    let i: number = 0;
+    while (i < this.variable_declarations.length) {
+      const currentNode = this.variable_node[i];
+      const variableDeclaration =
+        "var " + currentNode.identifier + " = " + currentNode.value + "\n";
+      newCode += variableDeclaration;
+      i++;
+    }
+    i = 0;
+    while (i < this.variable_declarations.length) {
+      const currentNode = this.variable_node[i];
+      const currentIfStatement =
+        "if (typeof " +
+        currentNode.identifier +
+        " !== " +
+        currentNode.enforced_type +
+        ") " +
+        "{ \n" +
+        "const type = " +
+        "typeof " +
+        currentNode.identifier +
+        "; \n" +
+        'console.log("Static Typing Error: Expected Type: [' +
+        currentNode.enforced_type +
+        '] Recieved Type: [ " + type + " ]' +
+        "\")';" +
+        "\n}" +
+        "\n";
+      newCode += currentIfStatement;
+      i++;
+    }
+    this.newCode = newCode;
+    if (!this.newCode) {
+      this.reportCreateCodeError("Internal Error");
+    }
+  }
+  
   private parseFile(): void {
     console.log(this.variable_node);
   }
@@ -261,6 +307,19 @@ export class Static {
   private reportConstructionError(
     message: string,
     errType: string = "ConstructionError"
+  ): void {
+    const messageToPresent =
+      chalk("[ErrorType]: ", Colors.bgRed) +
+      chalk(errType, Colors.bgRed) +
+      "\n" +
+      chalk(message, Colors.red);
+    console.error(messageToPresent);
+    console.trace();
+    process.exit(1);
+  }
+  private reportCreateCodeError(
+    message: string,
+    errType: string = "CreateCodeError"
   ): void {
     const messageToPresent =
       chalk("[ErrorType]: ", Colors.bgRed) +
