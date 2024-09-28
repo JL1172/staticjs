@@ -75,6 +75,7 @@ export class Static {
     const updated_code: string[] = [];
     for (let i: number = 0; i < lengthOfCode; i++) {
       const currentLineOfCode = codeToParse[i];
+
       switch (currentLineOfCode) {
         case "/":
           if (codeToParse[i + 1] === "/" && codeToParse[i + 2] !== "/") {

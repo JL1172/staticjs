@@ -78,6 +78,8 @@ var Static = /** @class */ (function () {
     };
     Static.prototype.removeComments = function () {
         var codeToParse = this.formatted_code.join("\n").split("");
+        var codeToParseDelimittedWithSpaces = this.formatted_code.join("\n").split(/\n\s*/);
+        console.log(codeToParseDelimittedWithSpaces);
         var lengthOfCode = codeToParse.length;
         var updated_code = [];
         for (var i = 0; i < lengthOfCode; i++) {
