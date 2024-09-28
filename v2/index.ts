@@ -248,10 +248,10 @@ export class Static {
         "typeof " +
         currentNode.identifier +
         "; \n" +
-        'console.log("Static Typing Error: Expected Type: [' +
+        "console.log(\"Static Typing Error: Expected Type: [" +
         currentNode.enforced_type +
-        '] Recieved Type: [ " + type + " ]' +
-        "\")';" +
+        "\] Recieved Type: [ \" + type + \" ]" +
+        "\");" +
         "\n}" +
         "\n";
       newCode += currentIfStatement;
