@@ -77,7 +77,7 @@ export class Static {
       const currentLineOfCode = codeToParse[i];
       switch (currentLineOfCode) {
         case "/":
-          if (codeToParse[i + 1] === "/") {
+          if (codeToParse[i + 1] === "/" && codeToParse[i + 2] !== "/") {
             let j = i;
             while (codeToParse[j] !== "\n" && j < codeToParse.length) {
               j++;
@@ -280,15 +280,21 @@ export class Static {
     }
   }
   private executeNewCode(): void {
+    const unexposed: boolean =
+      process.argv.at(-1) !== "--verbose" && process.argv.at(-1) !== "--v";
     this.cp("node " + this.newCodePath, (error, stdout, stderr) => {
       if (error) {
-        this.fs.unlinkSync(this.newCodePath);
+        if (unexposed) {
+          this.fs.unlinkSync(this.newCodePath);
+        }
         this.reportExecuteCodeError((error || stderr) + "");
       } else {
         this.aggregatedErrors = stdout
           .split("\n")
           .filter((n) => n.trim().length && n);
-        this.fs.unlinkSync(this.newCodePath);
+        if (unexposed) {
+          this.fs.unlinkSync(this.newCodePath);
+        }
         this.reportAggregateErrors();
       }
     });

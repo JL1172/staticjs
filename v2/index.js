@@ -84,7 +84,7 @@ var Static = /** @class */ (function () {
             var currentLineOfCode = codeToParse[i];
             switch (currentLineOfCode) {
                 case "/":
-                    if (codeToParse[i + 1] === "/") {
+                    if (codeToParse[i + 1] === "/" && codeToParse[i + 2] !== "/") {
                         var j = i;
                         while (codeToParse[j] !== "\n" && j < codeToParse.length) {
                             j++;
@@ -108,7 +108,6 @@ var Static = /** @class */ (function () {
             .join("")
             .split("\n")
             .filter(function (n) { return n; });
-        console.log(this.formatted_code);
     };
     Static.prototype.findVariableDeclarations = function () {
         var constKeyword = /const/;
@@ -275,16 +274,21 @@ var Static = /** @class */ (function () {
     };
     Static.prototype.executeNewCode = function () {
         var _this = this;
+        var unexposed = process.argv.at(-1) !== "--verbose" && process.argv.at(-1) !== "--v";
         this.cp("node " + this.newCodePath, function (error, stdout, stderr) {
             if (error) {
-                _this.fs.unlinkSync(_this.newCodePath);
+                if (unexposed) {
+                    _this.fs.unlinkSync(_this.newCodePath);
+                }
                 _this.reportExecuteCodeError((error || stderr) + "");
             }
             else {
                 _this.aggregatedErrors = stdout
                     .split("\n")
                     .filter(function (n) { return n.trim().length && n; });
-                _this.fs.unlinkSync(_this.newCodePath);
+                if (unexposed) {
+                    _this.fs.unlinkSync(_this.newCodePath);
+                }
                 _this.reportAggregateErrors();
             }
         });
