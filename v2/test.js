@@ -16,5 +16,5 @@ asdflkjhsad;lfkjas
 // const array = new Array(10).fill("hello");
 "not a statement to be parsed";
 //ignored
-my_name = 23;
+
 

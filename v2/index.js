@@ -44,6 +44,7 @@ var Static = /** @class */ (function () {
         this.variable_node = [];
         this.newCode = "";
         this.newCodePath = "";
+        this.aggregatedErrors = [];
         if (fileName.trim().length === 0) {
             this.reportConstructionError("Ensure when instantiating instance '__filename' is passed as an argument");
         }
@@ -63,7 +64,6 @@ var Static = /** @class */ (function () {
         this.removeImports();
         this.writeNewCodeToFile();
         this.executeNewCode();
-        // this.parseFile();
     };
     Static.prototype.validateFile = function () {
         try {
@@ -86,14 +86,15 @@ var Static = /** @class */ (function () {
                 case "/":
                     if (codeToParse[i + 1] === "/") {
                         var j = i;
-                        while (codeToParse[j] !== "\n") {
+                        while (codeToParse[j] !== "\n" && j < codeToParse.length) {
                             j++;
                         }
                         i = j;
                     }
                     else if (codeToParse[i + 1] === "*") {
                         var j = i;
-                        while (codeToParse[j] !== "*" || codeToParse[j + 1] !== "/") {
+                        while (j < codeToParse.length &&
+                            (codeToParse[j] !== "*" || codeToParse[j + 1] !== "/")) {
                             j++;
                         }
                         i = j;
@@ -107,6 +108,7 @@ var Static = /** @class */ (function () {
             .join("")
             .split("\n")
             .filter(function (n) { return n; });
+        console.log(this.formatted_code);
     };
     Static.prototype.findVariableDeclarations = function () {
         var constKeyword = /const/;
@@ -227,8 +229,10 @@ var Static = /** @class */ (function () {
             var currentNode = this.variable_node[i];
             var currentIfStatement = "if (typeof " +
                 currentNode.identifier +
-                " !== " + "\"" +
-                currentNode.enforced_type + "\"" +
+                " !== " +
+                '"' +
+                currentNode.enforced_type +
+                '"' +
                 ") " +
                 "{ " +
                 "const type = " +
@@ -237,7 +241,9 @@ var Static = /** @class */ (function () {
                 "; " +
                 'console.log("Static Typing Error: Expected Type: [' +
                 currentNode.enforced_type +
-                '] Recieved Type: [" + type + "] For Identifier ' + currentNode.identifier +
+                '] Recieved Type: [" + type + "] For Identifier [' +
+                currentNode.identifier +
+                "]" +
                 '");' +
                 "}";
             this.formatted_code.push(currentIfStatement);
@@ -251,7 +257,9 @@ var Static = /** @class */ (function () {
     Static.prototype.removeImports = function () {
         var importRegex = /const\s+{\s*Static\s*}\s*/;
         var methodCall = /\s*new\s+Static\s*\(\s*__filename\s*\)\s*\.\s*enable\s*\(\s*\)\s*/;
-        this.newCode = this.formatted_code.filter(function (n) { return !importRegex.test(n) && !methodCall.test(n); }).join("\n");
+        this.newCode = this.formatted_code
+            .filter(function (n) { return !importRegex.test(n) && !methodCall.test(n); })
+            .join("\n");
     };
     Static.prototype.writeNewCodeToFile = function () {
         try {
@@ -270,17 +278,39 @@ var Static = /** @class */ (function () {
         this.cp("node " + this.newCodePath, function (error, stdout, stderr) {
             if (error) {
                 _this.fs.unlinkSync(_this.newCodePath);
-                console.log("stderr: ", stderr);
-                console.log(error);
+                _this.reportExecuteCodeError((error || stderr) + "");
             }
             else {
-                console.log("stdout: ", stdout);
+                _this.aggregatedErrors = stdout
+                    .split("\n")
+                    .filter(function (n) { return n.trim().length && n; });
                 _this.fs.unlinkSync(_this.newCodePath);
+                _this.reportAggregateErrors();
             }
         });
     };
-    Static.prototype.parseFile = function () {
-        console.log(this.variable_node);
+    Static.prototype.reportAggregateErrors = function () {
+        if (this.aggregatedErrors.length !== 0) {
+            var code = 1;
+            var errType = "Staticjs Typing Error";
+            var error_messages = this.aggregatedErrors.join("\n") + "\n";
+            var heading = (0, colorize_2.chalk)("".concat(errType.toUpperCase()), colorize_1.Colors.bgRed) + "\n";
+            var body = (0, colorize_2.chalk)(error_messages, colorize_1.Colors.red);
+            var ending = (0, colorize_2.chalk)("Process exiting with code: ".concat(code), colorize_1.Colors.cyan) + "\n";
+            console.error(heading);
+            console.error(body);
+            console.error(ending);
+        }
+    };
+    Static.prototype.reportExecuteCodeError = function (message, errType) {
+        if (errType === void 0) { errType = "ExecuteCodeError"; }
+        var messageToPresent = (0, colorize_2.chalk)("[ErrorType]: ", colorize_1.Colors.bgRed) +
+            (0, colorize_2.chalk)(errType, colorize_1.Colors.bgRed) +
+            "\n" +
+            (0, colorize_2.chalk)(message, colorize_1.Colors.red);
+        console.error(messageToPresent);
+        console.trace();
+        process.exit(1);
     };
     Static.prototype.reportWriteFileError = function (message, errType) {
         if (errType === void 0) { errType = "WriteFileError"; }

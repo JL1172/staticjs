@@ -32,6 +32,7 @@ export class Static {
   private variable_node: VariableNode[] = [];
   private newCode: string = "";
   private newCodePath: string = "";
+  private aggregatedErrors: string[] = [];
 
   constructor(fileName: string) {
     if (fileName.trim().length === 0) {
@@ -55,7 +56,6 @@ export class Static {
     this.removeImports();
     this.writeNewCodeToFile();
     this.executeNewCode();
-    // this.parseFile();
   }
 
   private validateFile(): void {
@@ -73,20 +73,22 @@ export class Static {
     const codeToParse: string[] = this.formatted_code.join("\n").split("");
     const lengthOfCode: number = codeToParse.length;
     const updated_code: string[] = [];
-
     for (let i: number = 0; i < lengthOfCode; i++) {
       const currentLineOfCode = codeToParse[i];
       switch (currentLineOfCode) {
         case "/":
           if (codeToParse[i + 1] === "/") {
             let j = i;
-            while (codeToParse[j] !== "\n") {
+            while (codeToParse[j] !== "\n" && j < codeToParse.length) {
               j++;
             }
             i = j;
           } else if (codeToParse[i + 1] === "*") {
             let j = i;
-            while (codeToParse[j] !== "*" || codeToParse[j + 1] !== "/") {
+            while (
+              j < codeToParse.length &&
+              (codeToParse[j] !== "*" || codeToParse[j + 1] !== "/")
+            ) {
               j++;
             }
             i = j;
@@ -233,8 +235,10 @@ export class Static {
       const currentIfStatement =
         "if (typeof " +
         currentNode.identifier +
-        " !== " + "\"" +
-        currentNode.enforced_type + "\"" +
+        " !== " +
+        '"' +
+        currentNode.enforced_type +
+        '"' +
         ") " +
         "{ " +
         "const type = " +
@@ -243,13 +247,14 @@ export class Static {
         "; " +
         'console.log("Static Typing Error: Expected Type: [' +
         currentNode.enforced_type +
-        '] Recieved Type: [" + type + "] For Identifier ' + currentNode.identifier +
+        '] Recieved Type: [" + type + "] For Identifier [' +
+        currentNode.identifier +
+        "]" +
         '");' +
         "}";
       this.formatted_code.push(currentIfStatement);
       i++;
     }
-    
     this.newCode = this.formatted_code.join("\n");
     if (!this.newCode) {
       this.reportCreateCodeError("Internal Error");
@@ -257,8 +262,11 @@ export class Static {
   }
   private removeImports(): void {
     const importRegex: RegExp = /const\s+{\s*Static\s*}\s*/;
-    const methodCall: RegExp = /\s*new\s+Static\s*\(\s*__filename\s*\)\s*\.\s*enable\s*\(\s*\)\s*/; 
-    this.newCode = this.formatted_code.filter(n => !importRegex.test(n) && !methodCall.test(n)).join("\n");
+    const methodCall: RegExp =
+      /\s*new\s+Static\s*\(\s*__filename\s*\)\s*\.\s*enable\s*\(\s*\)\s*/;
+    this.newCode = this.formatted_code
+      .filter((n) => !importRegex.test(n) && !methodCall.test(n))
+      .join("\n");
   }
   private writeNewCodeToFile(): void {
     try {
@@ -272,19 +280,48 @@ export class Static {
     }
   }
   private executeNewCode(): void {
-      this.cp("node " + this.newCodePath, (error, stdout, stderr) => {
-        if (error) {
-          this.fs.unlinkSync(this.newCodePath);
-          console.log("stderr: ", stderr);
-          console.log(error);
-        } else {
-          console.log("stdout: ", stdout);
-          this.fs.unlinkSync(this.newCodePath);
-        }
-      });
+    this.cp("node " + this.newCodePath, (error, stdout, stderr) => {
+      if (error) {
+        this.fs.unlinkSync(this.newCodePath);
+        this.reportExecuteCodeError((error || stderr) + "");
+      } else {
+        this.aggregatedErrors = stdout
+          .split("\n")
+          .filter((n) => n.trim().length && n);
+        this.fs.unlinkSync(this.newCodePath);
+        this.reportAggregateErrors();
+      }
+    });
   }
-  private parseFile(): void {
-    console.log(this.variable_node);
+  private reportAggregateErrors(): void {
+    if (this.aggregatedErrors.length !== 0) {
+      const code: number = 1;
+      const errType: string = "Staticjs Typing Error";
+      const error_messages: string = this.aggregatedErrors.join("\n") + "\n";
+
+      const heading: string =
+        chalk(`${errType.toUpperCase()}`, Colors.bgRed) + "\n";
+      const body: string = chalk(error_messages, Colors.red);
+      const ending: string =
+        chalk(`Process exiting with code: ${code}`, Colors.cyan) + "\n";
+
+      console.error(heading);
+      console.error(body);
+      console.error(ending);
+    }
+  }
+  private reportExecuteCodeError(
+    message: string,
+    errType: string = "ExecuteCodeError"
+  ): void {
+    const messageToPresent =
+      chalk("[ErrorType]: ", Colors.bgRed) +
+      chalk(errType, Colors.bgRed) +
+      "\n" +
+      chalk(message, Colors.red);
+    console.error(messageToPresent);
+    console.trace();
+    process.exit(1);
   }
   private reportWriteFileError(
     message: string,
