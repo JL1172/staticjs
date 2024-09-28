@@ -123,7 +123,6 @@ export class Static {
           /["';]/g,
           ""
         );
-
         let secondToLastValue = splitCode[splitCode.length - 2].split("");
         if (!lastValue) {
           let idx: number = 1;
@@ -198,6 +197,7 @@ export class Static {
         //   this.force_quit_for_dev_purposed_only();
           let h = -1; let k = -1;
           let index = 0;
+          console.log(valueOfVariable);
           while (h === -1 || k === -1) {
             if (valueOfVariable[index] === ";") {
                 if (h === -1) {
