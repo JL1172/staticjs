@@ -61,8 +61,6 @@ var Static = /** @class */ (function () {
         this.parseVariableDeclarations();
         this.createCode();
         this.removeImports();
-        console.log(this.formatted_code);
-        this.force_quit_for_dev_purposed_only();
         this.writeNewCodeToFile();
         this.executeNewCode();
         // this.parseFile();
@@ -239,7 +237,7 @@ var Static = /** @class */ (function () {
                 "; " +
                 'console.log("Static Typing Error: Expected Type: [' +
                 currentNode.enforced_type +
-                '] Recieved Type: [ " + type + " ]' +
+                '] Recieved Type: [" + type + "] For Identifier ' + currentNode.identifier +
                 '");' +
                 "}";
             this.formatted_code.push(currentIfStatement);
@@ -253,7 +251,7 @@ var Static = /** @class */ (function () {
     Static.prototype.removeImports = function () {
         var importRegex = /const\s+{\s*Static\s*}\s*/;
         var methodCall = /\s*new\s+Static\s*\(\s*__filename\s*\)\s*\.\s*enable\s*\(\s*\)\s*/;
-        this.formatted_code = this.formatted_code.filter(function (n) { return !importRegex.test(n) && !methodCall.test(n); });
+        this.newCode = this.formatted_code.filter(function (n) { return !importRegex.test(n) && !methodCall.test(n); }).join("\n");
     };
     Static.prototype.writeNewCodeToFile = function () {
         try {
@@ -269,24 +267,17 @@ var Static = /** @class */ (function () {
     };
     Static.prototype.executeNewCode = function () {
         var _this = this;
-        try {
-            console.log(this.newCode);
-            this.cp("node " + this.newCodePath, function (error, stdout, stderr) {
-                if (error) {
-                    _this.fs.unlinkSync(_this.newCodePath);
-                    throw new Error(error + "");
-                }
-                else {
-                    console.log("stdout: ", stdout);
-                    console.log("stderr: ", stderr);
-                    _this.fs.unlinkSync(_this.newCodePath);
-                }
-            });
-        }
-        catch (err) {
-            console.log("erorror");
-            console.log(err);
-        }
+        this.cp("node " + this.newCodePath, function (error, stdout, stderr) {
+            if (error) {
+                _this.fs.unlinkSync(_this.newCodePath);
+                console.log("stderr: ", stderr);
+                console.log(error);
+            }
+            else {
+                console.log("stdout: ", stdout);
+                _this.fs.unlinkSync(_this.newCodePath);
+            }
+        });
     };
     Static.prototype.parseFile = function () {
         console.log(this.variable_node);

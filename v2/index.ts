@@ -53,8 +53,6 @@ export class Static {
     this.parseVariableDeclarations();
     this.createCode();
     this.removeImports();
-    console.log(this.formatted_code);
-    this.force_quit_for_dev_purposed_only();
     this.writeNewCodeToFile();
     this.executeNewCode();
     // this.parseFile();
@@ -245,7 +243,7 @@ export class Static {
         "; " +
         'console.log("Static Typing Error: Expected Type: [' +
         currentNode.enforced_type +
-        '] Recieved Type: [ " + type + " ]' +
+        '] Recieved Type: [" + type + "] For Identifier ' + currentNode.identifier +
         '");' +
         "}";
       this.formatted_code.push(currentIfStatement);
@@ -260,7 +258,7 @@ export class Static {
   private removeImports(): void {
     const importRegex: RegExp = /const\s+{\s*Static\s*}\s*/;
     const methodCall: RegExp = /\s*new\s+Static\s*\(\s*__filename\s*\)\s*\.\s*enable\s*\(\s*\)\s*/; 
-    this.formatted_code = this.formatted_code.filter(n => !importRegex.test(n) && !methodCall.test(n));
+    this.newCode = this.formatted_code.filter(n => !importRegex.test(n) && !methodCall.test(n)).join("\n");
   }
   private writeNewCodeToFile(): void {
     try {
@@ -274,22 +272,16 @@ export class Static {
     }
   }
   private executeNewCode(): void {
-    try {
-      console.log(this.newCode);
       this.cp("node " + this.newCodePath, (error, stdout, stderr) => {
         if (error) {
           this.fs.unlinkSync(this.newCodePath);
-          throw new Error(error + "");
+          console.log("stderr: ", stderr);
+          console.log(error);
         } else {
           console.log("stdout: ", stdout);
-          console.log("stderr: ", stderr);
           this.fs.unlinkSync(this.newCodePath);
         }
       });
-    } catch (err) {
-      console.log("erorror");
-      console.log(err);
-    }
   }
   private parseFile(): void {
     console.log(this.variable_node);
