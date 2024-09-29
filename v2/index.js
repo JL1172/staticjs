@@ -52,7 +52,7 @@ var Static = /** @class */ (function () {
             this.path = fileName;
         }
     }
-    Static.prototype.enable = function () {
+    Static.prototype.enableVars = function () {
         this.validateFile();
         if (!this.formatted_code || this.formatted_code.length === 0) {
             this.reportFileReadError("Error reading file and parsing code");
@@ -79,7 +79,6 @@ var Static = /** @class */ (function () {
     Static.prototype.removeComments = function () {
         var singleLineComment = /\/\/.*$/;
         this.formatted_code = this.formatted_code.filter(function (n) { return !singleLineComment.test(n); });
-        // console.log(this.formatted_code);
         var multiLineCommentStart = /\/\*.*$/;
         var multiLineCommentEnd = /\*\//;
         var len = this.formatted_code.length;
@@ -242,7 +241,7 @@ var Static = /** @class */ (function () {
     };
     Static.prototype.removeImports = function () {
         var importRegex = /const\s+{\s*Static\s*}\s*/;
-        var methodCall = /\s*new\s+Static\s*\(\s*__filename\s*\)\s*\.\s*enable\s*\(\s*\)\s*/;
+        var methodCall = /\s*new\s+Static\s*\(\s*__filename\s*\)\s*\.\s*enableVars\s*\(\s*\)\s*/;
         this.newCode = this.formatted_code
             .filter(function (n) { return !importRegex.test(n) && !methodCall.test(n); })
             .join("\n");

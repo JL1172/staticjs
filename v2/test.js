@@ -1,6 +1,6 @@
-const {Static} = require("./index");
+const {Static} = require("./index.js");
 
-new Static(__filename)   .enable();
+new Static(__filename)   .enableVars();
 /*ignore this as well
 */
 let my_name = "jacob has a cool car;" + "[]"; "string"   ;

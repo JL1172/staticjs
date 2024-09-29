@@ -44,7 +44,7 @@ export class Static {
     }
   }
 
-  public enable(): void {
+  public enableVars(): void {
     this.validateFile();
     if (!this.formatted_code || this.formatted_code.length === 0) {
       this.reportFileReadError("Error reading file and parsing code");
@@ -248,7 +248,7 @@ export class Static {
   private removeImports(): void {
     const importRegex: RegExp = /const\s+{\s*Static\s*}\s*/;
     const methodCall: RegExp =
-      /\s*new\s+Static\s*\(\s*__filename\s*\)\s*\.\s*enable\s*\(\s*\)\s*/;
+      /\s*new\s+Static\s*\(\s*__filename\s*\)\s*\.\s*enableVars\s*\(\s*\)\s*/;
     this.newCode = this.formatted_code
       .filter((n) => !importRegex.test(n) && !methodCall.test(n))
       .join("\n");
