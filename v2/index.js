@@ -77,39 +77,24 @@ var Static = /** @class */ (function () {
         }
     };
     Static.prototype.removeComments = function () {
-        var codeToParse = this.formatted_code.join("\n").split("");
-        var codeToParseDelimittedWithSpaces = this.formatted_code.join("\n").split(/\n\s*/);
-        console.log(codeToParseDelimittedWithSpaces);
-        var lengthOfCode = codeToParse.length;
-        var updated_code = [];
-        for (var i = 0; i < lengthOfCode; i++) {
-            var currentLineOfCode = codeToParse[i];
-            switch (currentLineOfCode) {
-                case "/":
-                    if (codeToParse[i + 1] === "/" && codeToParse[i + 2] !== "/") {
-                        var j = i;
-                        while (codeToParse[j] !== "\n" && j < codeToParse.length) {
-                            j++;
-                        }
-                        i = j;
-                    }
-                    else if (codeToParse[i + 1] === "*") {
-                        var j = i;
-                        while (j < codeToParse.length &&
-                            (codeToParse[j] !== "*" || codeToParse[j + 1] !== "/")) {
-                            j++;
-                        }
-                        i = j;
-                    }
-                    break;
-                default:
-                    updated_code.push(codeToParse[i]);
+        var singleLineComment = /\/\/.*$/;
+        this.formatted_code = this.formatted_code.filter(function (n) { return !singleLineComment.test(n); });
+        // console.log(this.formatted_code);
+        var multiLineCommentStart = /\/\*.*$/;
+        var multiLineCommentEnd = /\*\//;
+        var len = this.formatted_code.length;
+        var new_formatted_code = [];
+        for (var i = 0; i < len; i++) {
+            if (multiLineCommentStart.test(this.formatted_code[i])) {
+                var j = i;
+                while (!multiLineCommentEnd.test(this.formatted_code[j])) {
+                    j++;
+                }
+                i = j + 1;
             }
+            new_formatted_code.push(this.formatted_code[i]);
         }
-        this.formatted_code = updated_code
-            .join("")
-            .split("\n")
-            .filter(function (n) { return n; });
+        this.formatted_code = new_formatted_code;
     };
     Static.prototype.findVariableDeclarations = function () {
         var constKeyword = /const/;

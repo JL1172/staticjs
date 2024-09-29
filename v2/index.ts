@@ -70,39 +70,23 @@ export class Static {
   }
 
   private removeComments(): void {
-    const codeToParse: string[] = this.formatted_code.join("\n").split("");
-    const lengthOfCode: number = codeToParse.length;
-    const updated_code: string[] = [];
-    for (let i: number = 0; i < lengthOfCode; i++) {
-      const currentLineOfCode = codeToParse[i];
-
-      switch (currentLineOfCode) {
-        case "/":
-          if (codeToParse[i + 1] === "/" && codeToParse[i + 2] !== "/") {
-            let j = i;
-            while (codeToParse[j] !== "\n" && j < codeToParse.length) {
-              j++;
-            }
-            i = j;
-          } else if (codeToParse[i + 1] === "*") {
-            let j = i;
-            while (
-              j < codeToParse.length &&
-              (codeToParse[j] !== "*" || codeToParse[j + 1] !== "/")
-            ) {
-              j++;
-            }
-            i = j;
-          }
-          break;
-        default:
-          updated_code.push(codeToParse[i]);
+    const singleLineComment: RegExp = /\/\/.*$/;
+    this.formatted_code = this.formatted_code.filter(n => !singleLineComment.test(n));
+    const multiLineCommentStart: RegExp = /\/\*.*$/;
+    const multiLineCommentEnd: RegExp = /\*\//;
+    const len: number = this.formatted_code.length;
+    const new_formatted_code: string[] = [];
+    for (let i: number = 0; i < len; i++) {
+      if (multiLineCommentStart.test(this.formatted_code[i])) {
+        let j: number = i;
+        while (!multiLineCommentEnd.test(this.formatted_code[j])) {
+          j++;
+        }
+        i = j + 1;
       }
+      new_formatted_code.push(this.formatted_code[i]);
     }
-    this.formatted_code = updated_code
-      .join("")
-      .split("\n")
-      .filter((n) => n);
+    this.formatted_code = new_formatted_code;
   }
 
   private findVariableDeclarations(): void {
