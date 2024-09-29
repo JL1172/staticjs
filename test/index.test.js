@@ -1,4 +1,4 @@
-const {Static} = require("./index.js");
+const {Static} = require("../src/index.js");
 
 new Static(__filename)   .enableVars();
 /*ignore this as well

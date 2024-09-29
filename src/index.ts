@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import { exec } from "child_process";
-import { Colors } from "../lib/colorize";
-import { chalk } from "../lib/colorize";
+import { Colors } from "./colorize";
+import { chalk } from "./colorize";
 
 abstract class Node {
   public identifier: string;
