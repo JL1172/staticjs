@@ -1,0 +1,4 @@
+const $type = {
+    age: "number"
+}
+

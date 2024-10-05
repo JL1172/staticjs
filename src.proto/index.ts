@@ -43,7 +43,7 @@ export class Static {
       this.path = fileName;
     }
   }
-  
+
   public enableVars(): void {
     this.validateFile();
     if (!this.formatted_code || this.formatted_code.length === 0) {
@@ -51,7 +51,7 @@ export class Static {
     }
     this.removeComments();
     this.findVariableDeclarations();
-    this.parseVariableDeclarations();
+    this.tokenizeVariableDeclarations();
     /*
     this.createCode();
     this.removeImports();
@@ -73,7 +73,9 @@ export class Static {
 
   private removeComments(): void {
     const singleLineComment: RegExp = /\/\/.*$/;
-    this.formatted_code = this.formatted_code.filter(n => !singleLineComment.test(n));
+    this.formatted_code = this.formatted_code.filter(
+      (n) => !singleLineComment.test(n)
+    );
     const multiLineCommentStart: RegExp = /\/\*.*$/;
     const multiLineCommentEnd: RegExp = /\*\//;
     const len: number = this.formatted_code.length;
@@ -106,116 +108,98 @@ export class Static {
     }
   }
 
-  private parseVariableDeclarations(): void {
+  private tokenizeVariableDeclarations(): void {
+    //need to tokenize variable declaration
+    //1. need to get the identifier
+    //2. need to tokenize the value
+    //3. need to tokenize the type
+
+    let identifier: string = "";
+    let value: string = "";
+    let enforced_type: string = "";
+
+    
     const lengthOfVariableDeclarationArr: number =
-      this.variable_declarations.length;
+    this.variable_declarations.length;
     if (lengthOfVariableDeclarationArr !== 0) {
       for (let i: number = 0; i < lengthOfVariableDeclarationArr; i++) {
-        const splitCode: string[] = this.variable_declarations[i]
-          .split(" ")
-          .filter((n) => n);
-        let lastValue: string = splitCode[splitCode.length - 1].replace(
-          /["';]/g,
-          ""
-        );
-        let secondToLastValue = splitCode[splitCode.length - 2].split("");
-        if (!lastValue) {
-          let idx: number = 1;
-          while (splitCode[splitCode.length - idx] === ";") {
-            idx++;
-          }
-          lastValue = splitCode[splitCode.length - idx].replace(/["';]/g, "");
-          secondToLastValue = splitCode[splitCode.length - (idx + 1)].split("");
-        }
-        if (secondToLastValue[secondToLastValue.length - 1] === ";") {
-          switch (lastValue) {
-            case "string":
-              break;
-            case "number":
-              break;
-            case "bigint":
-              break;
-            case "Date":
-              break;
-            case "function":
-              break;
-            case "boolean":
-              break;
-            case "undefined":
-              break;
-            case "null":
-              break;
-            default:
-              //todo eventually add custom typing
-              this.reportStaticTypingError(
-                "Error parsing statement following variable declaration, ensure statement is valid composite or primitive type" +
-                  "\n" +
-                  "Recieved: [" +
-                  lastValue +
-                  "]" +
-                  "\n" +
-                  "If this message does not apply, ensure that semi colon follows variable declaration, the correct format is the following: " +
-                  "\n" +
-                  chalk('const identifier = "name"; "string";', Colors.bgCyan)
-              );
-          }
+        
+        let assignmentFound: boolean = false;
 
-          let identifier: string = "";
-          const constKeyword: RegExp = /const/;
-          const letKeyword: RegExp = /let/;
-          for (let i: number = 0; i < splitCode.length; i++) {
-            const currentToken = splitCode[i];
-            if (
-              constKeyword.test(currentToken) ||
-              letKeyword.test(currentToken)
-            ) {
-              identifier = splitCode[i + 1];
-              break;
-            }
+        const currentLineOfCode: string[] = this.variable_declarations[i]
+        .split(" ")
+        .filter((n) => n);
+        
+        identifier = this.tokenizeIdentifier(currentLineOfCode).trim().split("").map(n => {
+          if (n === "=") {
+            assignmentFound = true;
           }
-          let assignmentFound: boolean = false;
-          identifier = identifier
-            .split("")
-            .map((n) => {
-              if (n === "=" || n === ":") {
-                assignmentFound = true;
-              }
-              if (n !== "=" && assignmentFound === false) {
-                return n;
-              }
-            })
-            .join("");
-
-          let valueOfVariable: string[] | string = [];
-          const characterCode: string[] = splitCode.join("").split("");
-          const indexOfAssignmentOperator = characterCode.indexOf("=") + 1;
-          valueOfVariable = characterCode.slice(indexOfAssignmentOperator);
-          valueOfVariable.reverse();
-          //   this.force_quit_for_dev_purposed_only();
-          let h = -1;
-          let k = -1;
-          let index = 0;
-          while (h === -1 || k === -1) {
-            if (valueOfVariable[index] === ";") {
-              if (h === -1) {
-                h = index;
-              } else if (h !== -1 && k === -1) {
-                k = index;
-              }
-            }
-            index++;
+          if (assignmentFound === false) {
+            return n;
           }
-          valueOfVariable = valueOfVariable.slice(k).reverse().join("");
+        }).join("");
 
-          this.variable_node.push(
-            new VariableNode(identifier, valueOfVariable, lastValue)
+        if (!identifier) {
+          this.reportStaticTypingError(
+            "Internal Error On Tokenize Variable Declaration Method"
           );
         }
+
+        const characterizedLineofCode: string[] = this.variable_declarations[i].split("").filter(n => n);
+        
+        let startIndex: number = characterizedLineofCode.findIndex(n => n === "=");
+        if (startIndex === -1) {
+          this.reportStaticTypingError(
+            "Internal Error On Tokenize Variable Declaration Method"
+          );
+        }
+        startIndex++;
+
+        const reversedLineOfCode: string[] = characterizedLineofCode.slice(startIndex).reverse();
+        
+        const lenOfReversedLineOfCode: number = reversedLineOfCode.length;
+
+        let semiColonFound: boolean = false;
+        let secondToLastSemiColon: number = -1;
+        for (let k: number = 0; k < lenOfReversedLineOfCode; k++) {
+            const currentToken: string = reversedLineOfCode[k];
+            if (currentToken === ";") {
+              semiColonFound = true;
+            }
+            if (semiColonFound === true && currentToken === ";") {
+              secondToLastSemiColon = k;
+            }
+        }
+
+        value = reversedLineOfCode.slice(secondToLastSemiColon).reverse().join("");
+
+        console.log(value);
+
+        if (!value) {
+          this.reportStaticTypingError(
+            "Internal Error On Tokenize Variable Declaration Method"
+          );
+        }
+        
+
+        console.log(chalk("new line", Colors.cyan));
+        // console.log(currentLineOfCode);
       }
     }
   }
   //got to figure out how to evaluate types
-
+  private tokenizeIdentifier(lineOfCode: string[]): string {
+    const letKeyword: RegExp = /let/;
+    const constKeyword: RegExp = /const/;
+    // console.log(lineOfCode);
+    const len: number = lineOfCode.length;
+    for (let i: number = 0; i < len; i++) {
+      if (letKeyword.test(lineOfCode[i]) || constKeyword.test(lineOfCode[i])) {
+        return lineOfCode[i + 1];
+      }
+    }
+    return "";
+  }
   private createCode(): void {
     let i: number = 0;
     while (i < this.variable_declarations.length - 1) {
