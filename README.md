@@ -64,3 +64,7 @@ not supported yet, only on version 0.0.2.
 ## The future of Staticjs
 
 Main version 1.0.0 will have full custom typing support, local variable support, block scoping support, field instance support, function return type support, parameter support, class support.
+
+## Additional Comments
+
+Note that the official code and version that represents this package are in *src*. Any prototypes I am completing will be done in *src.proto* and are apart of the untested, untried version that is unstable.

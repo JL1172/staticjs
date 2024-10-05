@@ -52,10 +52,12 @@ export class Static {
     this.removeComments();
     this.findVariableDeclarations();
     this.parseVariableDeclarations();
+    /*
     this.createCode();
     this.removeImports();
     this.writeNewCodeToFile();
     this.executeNewCode();
+    */
   }
 
   private validateFile(): void {
@@ -133,7 +135,7 @@ export class Static {
               break;
             case "bigint":
               break;
-            case "object":
+            case "Date":
               break;
             case "function":
               break;
@@ -204,6 +206,7 @@ export class Static {
             index++;
           }
           valueOfVariable = valueOfVariable.slice(k).reverse().join("");
+
           this.variable_node.push(
             new VariableNode(identifier, valueOfVariable, lastValue)
           );

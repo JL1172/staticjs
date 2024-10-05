@@ -1,4 +1,5 @@
-const {Static} = require("../lib/index");
+// const {Static} = require("../lib/index");
+import {Static} from "./index";
 
 new Static(__filename)   .enableVars();
 /*ignore this as well
@@ -16,9 +17,6 @@ asdflkjhsad;lfkjas
 //im going to ignore this as well
 // const array = new Array(10).fill("hello");
 "not a statement to be parsed";
-function addNum() { 
-    
-}
 //ignored
 
 
