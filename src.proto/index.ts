@@ -7,10 +7,14 @@ abstract class Node {
   public identifier: string;
   public value: string;
   public enforced_type: string;
-  constructor(id: string, val: string, type: string) {
+  public custom_type: boolean;
+  public custom_type_interface: string;
+  constructor(id: string, val: string, type: string, custom_type: boolean = false, custom_type_interface: string = "") {
     this.identifier = id;
     this.value = val;
     this.enforced_type = type;
+    this.custom_type = custom_type;
+    this.custom_type_interface = custom_type_interface;
   }
 }
 
@@ -18,8 +22,9 @@ class VariableNode extends Node {
   public identifier: string;
   public value: string;
   public enforced_type: string;
-  constructor(id: string, val: string, type: string) {
-    super(id, val, type);
+  public custom_type: boolean = false;
+  constructor(id: string, val: string, type: string, custom_type: boolean = false) {
+    super(id, val, type, custom_type);
   }
 }
 
@@ -52,13 +57,7 @@ export class Static {
     this.removeComments();
     this.findVariableDeclarations();
     this.tokenizeVariableDeclarations();
-    console.log(this.variable_node);
-    /*
-    this.createCode();
-    this.removeImports();
-    this.writeNewCodeToFile();
-    this.executeNewCode();
-    */
+    this.validateCustomTypes();
   }
 
   private validateFile(): void {
@@ -110,11 +109,7 @@ export class Static {
   }
 
   private tokenizeVariableDeclarations(): void {
-    //need to tokenize variable declaration
-    //1. need to get the identifier
-    //2. need to tokenize the value
-    //3. need to tokenize the type
-
+  
     let identifier: string = "";
     let value: string = "";
     let enforced_type: string = "";
@@ -204,6 +199,28 @@ export class Static {
       }
     }
   }
+
+  private validateCustomTypes() : void {
+    this.variable_node = this.variable_node.map(n => {
+      if (n.enforced_type.split("")[1] === '$') {
+        n.custom_type = true;
+      }
+      return n;
+    });
+    const interfaces: string[] = [];
+    const lenOfFormattedCode: number = this.formatted_code.length;
+    for (let i: number = 0; i < lenOfFormattedCode; i++) {
+      const curentLineOfCode: string[] = this.formatted_code[i].split(" ");
+      const lenOfCurrentLineOfCode: number = curentLineOfCode.length;
+      for (let j: number = 0; j < lenOfCurrentLineOfCode; j++) {
+        if (/var/.test(curentLineOfCode[j])) {
+          interfaces.push(curentLineOfCode.join(" "));
+          continue;
+        }
+      }
+    }
+    console.log(interfaces);
+  }
   //got to figure out how to evaluate types
   private tokenizeIdentifier(lineOfCode: string[]): string {
     const letKeyword: RegExp = /let/;
@@ -216,77 +233,6 @@ export class Static {
       }
     }
     return "";
-  }
-  private createCode(): void {
-    let i: number = 0;
-    while (i < this.variable_declarations.length - 1) {
-      const currentNode = this.variable_node[i];
-      const currentIfStatement =
-        "if (typeof " +
-        currentNode.identifier +
-        " !== " +
-        '"' +
-        currentNode.enforced_type +
-        '"' +
-        ") " +
-        "{ " +
-        "const type = " +
-        "typeof " +
-        currentNode.identifier +
-        "; " +
-        'console.log("Static Typing Error: Expected Type: [' +
-        currentNode.enforced_type +
-        '] Recieved Type: [" + type + "] For Identifier [' +
-        currentNode.identifier +
-        "]" +
-        '");' +
-        "}";
-      this.formatted_code.push(currentIfStatement);
-      i++;
-    }
-    this.newCode = this.formatted_code.join("\n");
-    if (!this.newCode) {
-      this.reportCreateCodeError("Internal Error");
-    }
-  }
-  private removeImports(): void {
-    const importRegex: RegExp = /const\s+{\s*Static\s*}\s*/;
-    const methodCall: RegExp =
-      /\s*new\s+Static\s*\(\s*__filename\s*\)\s*\.\s*enableVars\s*\(\s*\)\s*/;
-    this.newCode = this.formatted_code
-      .filter((n) => !importRegex.test(n) && !methodCall.test(n))
-      .join("\n");
-  }
-  private writeNewCodeToFile(): void {
-    try {
-      const splitpath: string[] = this.path.split("/");
-      splitpath[splitpath.length - 1] = new Date().toISOString() + ".js";
-      const newFilePath = splitpath.join("/");
-      this.newCodePath = newFilePath;
-      this.fs.writeFileSync(newFilePath, this.newCode, { encoding: "utf-8" });
-    } catch (err) {
-      this.reportWriteFileError("Error Writing Code To File");
-    }
-  }
-  private executeNewCode(): void {
-    const unexposed: boolean =
-      process.argv.at(-1) !== "--verbose" && process.argv.at(-1) !== "--v";
-    this.cp("node " + this.newCodePath, (error, stdout, stderr) => {
-      if (error) {
-        if (unexposed) {
-          this.fs.unlinkSync(this.newCodePath);
-        }
-        this.reportExecuteCodeError((error || stderr) + "");
-      } else {
-        this.aggregatedErrors = stdout
-          .split("\n")
-          .filter((n) => n.trim().length && n);
-        if (unexposed) {
-          this.fs.unlinkSync(this.newCodePath);
-        }
-        this.reportAggregateErrors();
-      }
-    });
   }
   private reportAggregateErrors(): void {
     if (this.aggregatedErrors.length !== 0) {
