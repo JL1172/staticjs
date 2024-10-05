@@ -18,7 +18,7 @@ asdflkjhsad;lfkjas
 // const array = new Array(10).fill("hello");
 "not a statement to be parsed";
 
-const $CustomType = {customer_name: "string", customer_address: "string"};
+var $CustomType = {customer_name: "string", customer_address: "string"};
 
 const min = 2; "number";
 

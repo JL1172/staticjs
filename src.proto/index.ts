@@ -52,6 +52,7 @@ export class Static {
     this.removeComments();
     this.findVariableDeclarations();
     this.tokenizeVariableDeclarations();
+    console.log(this.variable_node);
     /*
     this.createCode();
     this.removeImports();
@@ -118,26 +119,28 @@ export class Static {
     let value: string = "";
     let enforced_type: string = "";
 
-    
     const lengthOfVariableDeclarationArr: number =
-    this.variable_declarations.length;
+      this.variable_declarations.length;
     if (lengthOfVariableDeclarationArr !== 0) {
       for (let i: number = 0; i < lengthOfVariableDeclarationArr; i++) {
-        
         let assignmentFound: boolean = false;
 
         const currentLineOfCode: string[] = this.variable_declarations[i]
-        .split(" ")
-        .filter((n) => n);
-        
-        identifier = this.tokenizeIdentifier(currentLineOfCode).trim().split("").map(n => {
-          if (n === "=") {
-            assignmentFound = true;
-          }
-          if (assignmentFound === false) {
-            return n;
-          }
-        }).join("");
+          .split(" ")
+          .filter((n) => n);
+
+        identifier = this.tokenizeIdentifier(currentLineOfCode)
+          .trim()
+          .split("")
+          .map((n) => {
+            if (n === "=") {
+              assignmentFound = true;
+            }
+            if (assignmentFound === false) {
+              return n;
+            }
+          })
+          .join("");
 
         if (!identifier) {
           this.reportStaticTypingError(
@@ -145,9 +148,13 @@ export class Static {
           );
         }
 
-        const characterizedLineofCode: string[] = this.variable_declarations[i].split("").filter(n => n);
-        
-        let startIndex: number = characterizedLineofCode.findIndex(n => n === "=");
+        const characterizedLineofCode: string[] = this.variable_declarations[i]
+          .split("")
+          .filter((n) => n);
+
+        let startIndex: number = characterizedLineofCode.findIndex(
+          (n) => n === "="
+        );
         if (startIndex === -1) {
           this.reportStaticTypingError(
             "Internal Error On Tokenize Variable Declaration Method"
@@ -155,35 +162,45 @@ export class Static {
         }
         startIndex++;
 
-        const reversedLineOfCode: string[] = characterizedLineofCode.slice(startIndex).reverse();
-        
+        const reversedLineOfCode: string[] = characterizedLineofCode
+          .slice(startIndex)
+          .reverse();
+
         const lenOfReversedLineOfCode: number = reversedLineOfCode.length;
 
         let semiColonFound: boolean = false;
         let secondToLastSemiColon: number = -1;
         for (let k: number = 0; k < lenOfReversedLineOfCode; k++) {
-            const currentToken: string = reversedLineOfCode[k];
-            if (currentToken === ";") {
-              semiColonFound = true;
-            }
-            if (semiColonFound === true && currentToken === ";") {
-              secondToLastSemiColon = k;
-            }
+          const currentToken: string = reversedLineOfCode[k];
+          if (currentToken === ";" && semiColonFound === false) {
+            semiColonFound = true;
+            continue;
+          }
+          if (semiColonFound === true && currentToken === ";") {
+            secondToLastSemiColon = k;
+            break;
+          }
         }
 
-        value = reversedLineOfCode.slice(secondToLastSemiColon).reverse().join("");
-
-        console.log(value);
+        value = reversedLineOfCode
+          .slice(secondToLastSemiColon)
+          .reverse()
+          .join("");
 
         if (!value) {
           this.reportStaticTypingError(
             "Internal Error On Tokenize Variable Declaration Method"
           );
         }
-        
 
-        console.log(chalk("new line", Colors.cyan));
-        // console.log(currentLineOfCode);
+        enforced_type = reversedLineOfCode
+          .reverse()
+          .slice(reversedLineOfCode.length - secondToLastSemiColon)
+          .join("")
+          .replace(/s*;/g, "")
+          .trim();
+
+        this.variable_node.push(new VariableNode(identifier, value, enforced_type));
       }
     }
   }
