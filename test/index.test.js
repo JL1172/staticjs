@@ -16,6 +16,9 @@ asdflkjhsad;lfkjas
 //im going to ignore this as well
 // const array = new Array(10).fill("hello");
 "not a statement to be parsed";
+function addNum() { 
+    
+}
 //ignored
 
 

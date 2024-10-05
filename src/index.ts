@@ -43,7 +43,7 @@ export class Static {
       this.path = fileName;
     }
   }
-
+  
   public enableVars(): void {
     this.validateFile();
     if (!this.formatted_code || this.formatted_code.length === 0) {

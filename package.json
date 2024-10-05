@@ -6,7 +6,7 @@
   "type": "commonjs",
   "types": "./types/index.d.ts",
   "scripts": {
-    "c": "tsc v2/index.ts && node v2/test.js"
+    "c": "tsc src/index.ts && node test/index.test.js"
   },
   "keywords": [
     "static",
