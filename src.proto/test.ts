@@ -41,6 +41,8 @@ const set = new Set(); "Set<number>";
 
 const customer = {customer_name: "alaina lang", customer_address: "1006 rd"}; "$CustomType"; 
 
+const customer_tw0 = {customer_name: "jacob lang", customer_address: "10056 long island drive"}; "$CustomTypeTwo";
+
 
 //ignored
 

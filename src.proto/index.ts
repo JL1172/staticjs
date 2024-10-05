@@ -245,12 +245,13 @@ export class Static {
   
           if (currentNode.enforced_type.replace(/["']/g, "") === id) {
             matched = true;
+            currentNode.custom_type_interface = currentInterface.join(" ");
+            break;
           }
-          // console.log(currentInterface);
         }
         if (matched === false) {
           this.reportStaticTypingError("Error finding reference to custom type: [" + currentNode.enforced_type + "]");
-        }
+        } 
         
       } else {
         continue;
