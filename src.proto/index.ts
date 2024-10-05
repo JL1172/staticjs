@@ -73,8 +73,12 @@ export class Static {
     this.tokenizeVariableDeclarations();
     this.validateCustomTypes();
     this.validateCompositeTypes();
-
-    console.log(this.variable_node);
+    this.tracePrimitiveTypedVariableReferences();
+    this.traceCustomTypedVariableReferences();
+    this.traceCompositeTypedVariableReferences();
+    this.parsePrimitiveTypes();
+    this.parseCustomTypes();
+    this.parseCompositeTypes();
   }
 
   private validateFile(): void {
@@ -283,6 +287,11 @@ export class Static {
   }
 
   private validateCompositeTypes(): void {
+    //need to look at all non custom type variable nodes and view if the enforced type is not a primitive type
+    //if not primitive type update compositetype key to true
+    //Then validate that the composite type is actually a valid javascript composite type 
+    //! big int and promises will need to be supported later
+
     const lenOfVariableNodes: number = this.variable_node.length;
     for (let i: number = 0; i < lenOfVariableNodes; i++) {
       const currentNode: VariableNode = this.variable_node[i];
@@ -295,6 +304,25 @@ export class Static {
         currentNode.composite_type = true;
       }
     }
+  }
+
+  private tracePrimitiveTypedVariableReferences():void {
+    
+  }
+  private traceCustomTypedVariableReferences():void {
+
+  }
+  private traceCompositeTypedVariableReferences():void {
+
+  }
+  private parsePrimitiveTypes(): void {
+
+  }
+  private parseCustomTypes(): void {
+
+  }
+  private parseCompositeTypes(): void {
+
   }
 
   private isCompositeType(type: string): boolean {
