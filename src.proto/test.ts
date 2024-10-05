@@ -37,6 +37,20 @@ const obj = {name: "jacob", age: 23}; "{string | number}";
 
 const map = new Map(); "Map<string, number>";
 
+// const bigInt = 3242048203094832892333232323223; "BigInt"
+
+// const promise = new Promise(resolve => resolve); "Promise"
+
+const fun = (greeting) => console.log("hello " + greeting); "Function(string):void";
+
+const reg = /[a-z]/; "RegExp";
+
+const weakMap = new WeakMap(); "WeakMap<string, number>";
+
+const weakSet = new WeakSet(); "WeakSet<number>";
+
+const err = new Error("hello world"); "Error";
+
 const set = new Set(); "Set<number>";
 
 const customer = {customer_name: "alaina lang", customer_address: "1006 rd"}; "$CustomType"; 

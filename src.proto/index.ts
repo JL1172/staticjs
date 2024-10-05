@@ -9,12 +9,21 @@ abstract class Node {
   public enforced_type: string;
   public custom_type: boolean;
   public custom_type_interface: string;
-  constructor(id: string, val: string, type: string, custom_type: boolean = false, custom_type_interface: string = "") {
+  public composite_type: boolean;
+  constructor(
+    id: string,
+    val: string,
+    type: string,
+    custom_type: boolean = false,
+    custom_type_interface: string = "",
+    composite_type: boolean = false
+  ) {
     this.identifier = id;
     this.value = val;
     this.enforced_type = type;
     this.custom_type = custom_type;
     this.custom_type_interface = custom_type_interface;
+    this.composite_type = composite_type;
   }
 }
 
@@ -23,7 +32,12 @@ class VariableNode extends Node {
   public value: string;
   public enforced_type: string;
   public custom_type: boolean = false;
-  constructor(id: string, val: string, type: string, custom_type: boolean = false) {
+  constructor(
+    id: string,
+    val: string,
+    type: string,
+    custom_type: boolean = false
+  ) {
     super(id, val, type, custom_type);
   }
 }
@@ -58,6 +72,9 @@ export class Static {
     this.findVariableDeclarations();
     this.tokenizeVariableDeclarations();
     this.validateCustomTypes();
+    this.validateCompositeTypes();
+
+    console.log(this.variable_node);
   }
 
   private validateFile(): void {
@@ -109,7 +126,6 @@ export class Static {
   }
 
   private tokenizeVariableDeclarations(): void {
-  
     let identifier: string = "";
     let value: string = "";
     let enforced_type: string = "";
@@ -195,21 +211,23 @@ export class Static {
           .replace(/s*;/g, "")
           .trim();
 
-        this.variable_node.push(new VariableNode(identifier, value, enforced_type));
+        this.variable_node.push(
+          new VariableNode(identifier, value, enforced_type)
+        );
       }
     }
   }
 
-  private validateCustomTypes() : void {
-    this.variable_node = this.variable_node.map(n => {
-      if (n.enforced_type.split("")[1] === '$') {
+  private validateCustomTypes(): void {
+    this.variable_node = this.variable_node.map((n) => {
+      if (n.enforced_type.split("")[1] === "$") {
         n.custom_type = true;
       }
       return n;
     });
     const interfaces: string[] = [];
     const lenOfFormattedCode: number = this.formatted_code.length;
-    
+
     for (let i: number = 0; i < lenOfFormattedCode; i++) {
       const curentLineOfCode: string[] = this.formatted_code[i].split(" ");
       const lenOfCurrentLineOfCode: number = curentLineOfCode.length;
@@ -220,29 +238,31 @@ export class Static {
         }
       }
     }
-  
+
     const variableNodeListLength: number = this.variable_node.length;
 
     for (let i: number = 0; i < variableNodeListLength; i++) {
-
       const currentNode: VariableNode = this.variable_node[i];
 
       if (currentNode.custom_type === true) {
-        // console.log(currentNode)
         let matched: boolean = false;
 
         for (let j: number = 0; j < interfaces.length; j++) {
           const currentInterface: string[] = interfaces[j].split(" ");
-          let operatorFound:boolean=false;
-          let id: string = currentInterface[1].split("").map(n => {
-            if (n === "=") {
-              operatorFound = true;
-            }
-            if (operatorFound === false) {
-              return n;
-            }
-          }).join("").trim();
-  
+          let operatorFound: boolean = false;
+          let id: string = currentInterface[1]
+            .split("")
+            .map((n) => {
+              if (n === "=") {
+                operatorFound = true;
+              }
+              if (operatorFound === false) {
+                return n;
+              }
+            })
+            .join("")
+            .trim();
+
           if (currentNode.enforced_type.replace(/["']/g, "") === id) {
             matched = true;
             currentNode.custom_type_interface = currentInterface.join(" ");
@@ -250,14 +270,44 @@ export class Static {
           }
         }
         if (matched === false) {
-          this.reportStaticTypingError("Error finding reference to custom type: [" + currentNode.enforced_type + "]");
-        } 
-        
+          this.reportStaticTypingError(
+            "Error finding reference to custom type: [" +
+              currentNode.enforced_type +
+              "]"
+          );
+        }
       } else {
         continue;
       }
     }
   }
+
+  private validateCompositeTypes(): void {
+    const lenOfVariableNodes: number = this.variable_node.length;
+    for (let i: number = 0; i < lenOfVariableNodes; i++) {
+      const currentNode: VariableNode = this.variable_node[i];
+      if (
+        currentNode.custom_type === false &&
+        !currentNode.custom_type_interface &&
+        this.isCompositeType(currentNode.enforced_type.replace(/["']/g, "")) ===
+          true
+      ) {
+        currentNode.composite_type = true;
+      }
+    }
+  }
+
+  private isCompositeType(type: string): boolean {
+    return (
+      type !== "string" &&
+      type !== "number" &&
+      type !== "boolean" &&
+      type !== "null" &&
+      type !== "undefined" &&
+      type !== "BigInt"
+    );
+  }
+
   //got to figure out how to evaluate types
   private tokenizeIdentifier(lineOfCode: string[]): string {
     const letKeyword: RegExp = /let/;
