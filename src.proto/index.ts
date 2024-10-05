@@ -209,6 +209,7 @@ export class Static {
     });
     const interfaces: string[] = [];
     const lenOfFormattedCode: number = this.formatted_code.length;
+    
     for (let i: number = 0; i < lenOfFormattedCode; i++) {
       const curentLineOfCode: string[] = this.formatted_code[i].split(" ");
       const lenOfCurrentLineOfCode: number = curentLineOfCode.length;
@@ -219,7 +220,42 @@ export class Static {
         }
       }
     }
-    console.log(interfaces);
+  
+    const variableNodeListLength: number = this.variable_node.length;
+
+    for (let i: number = 0; i < variableNodeListLength; i++) {
+
+      const currentNode: VariableNode = this.variable_node[i];
+
+      if (currentNode.custom_type === true) {
+        // console.log(currentNode)
+        let matched: boolean = false;
+
+        for (let j: number = 0; j < interfaces.length; j++) {
+          const currentInterface: string[] = interfaces[j].split(" ");
+          let operatorFound:boolean=false;
+          let id: string = currentInterface[1].split("").map(n => {
+            if (n === "=") {
+              operatorFound = true;
+            }
+            if (operatorFound === false) {
+              return n;
+            }
+          }).join("").trim();
+  
+          if (currentNode.enforced_type.replace(/["']/g, "") === id) {
+            matched = true;
+          }
+          // console.log(currentInterface);
+        }
+        if (matched === false) {
+          this.reportStaticTypingError("Error finding reference to custom type: [" + currentNode.enforced_type + "]");
+        }
+        
+      } else {
+        continue;
+      }
+    }
   }
   //got to figure out how to evaluate types
   private tokenizeIdentifier(lineOfCode: string[]): string {

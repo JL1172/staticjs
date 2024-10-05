@@ -19,6 +19,7 @@ asdflkjhsad;lfkjas
 "not a statement to be parsed";
 
 var $CustomType = {customer_name: "string", customer_address: "string"};
+var $CustomTypeTwo = {customer_name: "string", customer_address: "string"};
 
 const min = 2; "number";
 
