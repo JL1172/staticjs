@@ -55,7 +55,7 @@ number = new Date();
 
 ```
 node yourfile
-//throws static typing error in terminal
+throws static typing error in terminal
 ```
 
 - **Type Inference**: Not supported yet
@@ -76,9 +76,9 @@ Note that the official code and version that represents this package are in *src
 
 ## Most Recent Unstable Version 0.0.3
 
-- This version has a new parser algorithm that supports custom and composite types
+- This version has a new tokenization and parsing algorithm that supports custom and composite types and changes the breadth of static typing; essentially, it is more "intelligent" then the previous versions.
 - In comparison, to [0.0.2](#002-stable-2024-09-29), this does not generate code to perform static type analysis that is then executed in a child process in node. Hopefully this will increase performance
-- My tokenization algorithm that tokenizes any instance where a type is mentioned in the form of a statement proceeding a variable or function declaration supports custom types and searches for and validates the reference to the custom type interface in the code and composite types. 
+- My tokenization algorithm, that tokenizes any instance where a type is mentioned in the form of a statement proceeding a variable or function declaration, supports custom types and searches for and validates the reference to the custom type interface in the code and composite types. 
 - **Custom Types**
   - custom types are described in javascript with the var keyword and PascalCase, where the identifier is preceeded by a `$`. The following snippet will show more detail:
   ```
@@ -93,6 +93,7 @@ Note that the official code and version that represents this package are in *src
   - after validating there is a real reference to a preceeding, described custom type, validating the object or composite type is a real type, and the primitive type is a real primitive type, references will be found for each and every function and variable, and through parsing these references, if the static type constraint is breached in any way, a ***static typing error*** will be thrown.
   - this way, every area a variable or function is present in code -- that is, a variable or function that is proceeded by a type statement -- an analysis is done on every interaction it partakes in to ensure its relationship with its type is not infringed upon. 
   - Union types are supported as are recursively typed custom interfaces (multilayer object typing)
+  - I will be working on the error handling system that is in place to provide more depth and detail on aggregated errors. This is so scaling is a graceful process and a facet that can be overlooked, such as error handling, does not fall behind as things become more complicated.
 
 
 
