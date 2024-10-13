@@ -112,7 +112,8 @@ export class Static {
     this.parsePrimitiveTypes();
     this.parseCustomTypes();
     this.parseCompositeTypes();
-
+    //after this, static type analysis has been performed
+    
   }
 
   private validateFile(): void {
@@ -371,12 +372,24 @@ export class Static {
     }
   }
 
-  private tracePrimitiveTypedVariableReferences(): void {}
-  private traceCustomTypedVariableReferences(): void {}
-  private traceCompositeTypedVariableReferences(): void {}
-  private parsePrimitiveTypes(): void {}
-  private parseCustomTypes(): void {}
-  private parseCompositeTypes(): void {}
+  private tracePrimitiveTypedVariableReferences(): void {
+    //! need to go through each variable first filter all non composite and custom types and then look at each variable separately. all interctions with variable will be traced and added to the variable node array
+  } 
+  private traceCustomTypedVariableReferences(): void {
+    //! need to go through each variable first filter all custom types and then look at each variable separately. all interctions with variable will be traced and added to the variable node array
+  }
+  private traceCompositeTypedVariableReferences(): void {
+    //! need to go through each variable first filter all composite types and then look at each variable separately. all interctions with variable will be traced and added to the variable node array
+  }
+  private parsePrimitiveTypes(): void {
+    //! i will go through each variable node that has a primitive type enforced and will look at each interaction that i traced and then will validate no illegal interaction occurs
+  }
+  private parseCustomTypes(): void {
+    //! i will go through each variable node that has a customn type enforced and will look at each interaction that i traced and then will validate no illegal interaction occurs
+  }
+  private parseCompositeTypes(): void {
+    //! i will go through each variable node that has a composite type enforced and will look at each interaction that i traced and then will validate no illegal interaction occurs
+  }
 
   private isPotentialCompositeType(type: string): boolean {
     return (
