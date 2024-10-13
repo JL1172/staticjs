@@ -31,7 +31,7 @@ const und = undefined; "undefined";
 
 const name = "jacob lang"; "string";
 
-const array = ['jacob','lain','isaac']; "[string | number, $CustomType, [{string, number}], $Custom_Type2[[}}]]]";
+const array = ['jacob','lain','isaac']; "[string | number | $CustomType | [{string, number}] | $Custom_Type2 | Date]";
 
 const obj = {name: "jacob", age: 23}; "{string | number}";
 

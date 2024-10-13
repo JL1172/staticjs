@@ -302,6 +302,28 @@ export class Static {
     }
   }
 
+  private validateCustomType(custom_type: string): boolean {
+    const interfaces: string[] = [];
+    const lenOfFormattedCode: number = this.formatted_code.length;
+
+    for (let i: number = 0; i < lenOfFormattedCode; i++) {
+      const curentLineOfCode: string[] = this.formatted_code[i].split(" ");
+      const lenOfCurrentLineOfCode: number = curentLineOfCode.length;
+      for (let j: number = 0; j < lenOfCurrentLineOfCode; j++) {
+        if (/^s*var\b/.test(curentLineOfCode[j])) {
+          interfaces.push(curentLineOfCode.join(" "));
+          continue;
+        }
+      }
+    }
+    const customTypeIdentifierNames: string[] = interfaces.map(n => {
+      const id: string = n.split(" ")[1];
+      return id;
+    })
+   
+    return customTypeIdentifierNames.includes(custom_type);
+  } 
+
   private identifyPotentialCompositeTypes(): void {
     //! big int and promises will need to be supported later
 
@@ -434,9 +456,18 @@ export class Static {
         }
 
         if (valid === false) {
-          this.reportCompositeTypeConstructionError(
-            "Unknown type: " + lastType
-          );
+          const isCustomType: boolean = lastType.split("")[0] === "$";
+          if (!isCustomType) {
+            this.reportCompositeTypeConstructionError(
+              "Unknown type: " + lastType
+            );
+          } else {
+            if (!this.validateCustomType(lastType)) {
+              this.reportCompositeTypeConstructionError(
+                "Unknown type: " + lastType
+              );
+            }
+          }
         }
 
         const stack = new Stack();
@@ -452,7 +483,7 @@ export class Static {
         )[0];
 
         const characterizedCurrentlyEvaluatedCompositeType: string[] =
-          currentCompositeTypeToEvaluate.literal
+          currentCompositeTypeToEvaluate?.literal
             ?.split("")
             .slice(
               currentCompositeTypeToEvaluate.textRepresentation.length
@@ -466,7 +497,7 @@ export class Static {
 
         let typesToEvalute: string[] = [];
         let currentPotentialType: string = "";
-        // console.log(characterizedCurrentlyEvaluatedCompositeType.join(""));
+
         for (
           let j: number = 0;
           j < lenOfCharacterizedCurrentlyEvaluatedCompositeTypeStr;
@@ -496,15 +527,41 @@ export class Static {
             currentPotentialType = "";
           }
         }
-        typesToEvalute = typesToEvalute.filter((n) => n);
         if (stack.size() !== 0) {
           this.reportCompositeTypeConstructionError(
             "Error Parsing Composite Type, Incorrect Termination Of Either '[{(' In Type Definition"
           );
         }
+        typesToEvalute = typesToEvalute.filter((n) => n);
+        const lenOfTypesToEvaluate: number = typesToEvalute.length;
+        for (let h: number = 0; h < lenOfTypesToEvaluate; h++) {
+          const currentType: string = typesToEvalute[h];
+          if (this.isPotentialCompositeType(currentType) === true) {
+            this.isCompositeType(currentType);
+          } //else it is i a primitive type
+        }
       // console.log(typesToEvalute);
+      // console.log("break");
+      /*
+      [
+        'string',
+        'number',
+        '$CustomType',
+        'string',
+        'number',
+        '$Custom_Type2',
+        'Date'
+      ]
+      [ 'string', 'number' ]
+      [ 'string', 'number' ]
+      [ 'string' ]
+      [ 'string', 'number' ]
+      [ 'number' ]
+      [ 'number' ]
+      */
     }
   }
+
   //got to figure out how to evaluate types
   private tokenizeIdentifier(lineOfCode: string[]): string {
     const letKeyword: RegExp = /let/;
