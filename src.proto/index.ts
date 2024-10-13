@@ -3,6 +3,8 @@ import { exec } from "child_process";
 import { Colors } from "./colorize";
 import { chalk } from "./colorize";
 
+//this is a comment 
+
 abstract class Node {
   public identifier: string;
   public value: string;
@@ -42,6 +44,40 @@ class VariableNode extends Node {
   }
 }
 
+class Stack {
+  private stack: string[] = [];
+  public push(value: string): void {
+    this.stack.push(value);
+  }
+  public pop(): string | void {
+    if (this.stack.length > 0) {
+      return this.stack.pop();
+    }
+  }
+  public size(): number {
+    return this.stack.length;
+  }
+}
+
+class StaticJsError extends Error {
+  public message: string = "";
+  public errortagType: string = "";
+  constructor(name:string, message: string) {
+    super(name);
+    this.message = message;
+    this.reportError(this.message, name);
+  }
+  private reportError(message: string, name: string): void {
+    const messageToPresent =
+    chalk("[" + StaticJsError.name + "] " + name, Colors.bgRed) +
+    "\n" +
+    chalk(message, Colors.red);
+  console.error(messageToPresent);
+  console.trace();
+  process.exit(1);
+  }
+}
+
 export class Static {
   private path: string = "";
   private readonly fs: typeof fs = fs;
@@ -49,13 +85,11 @@ export class Static {
   private formatted_code: string[];
   private variable_declarations: string[] = [];
   private variable_node: VariableNode[] = [];
-  private newCode: string = "";
-  private newCodePath: string = "";
   private aggregatedErrors: string[] = [];
 
   constructor(fileName: string) {
     if (fileName.trim().length === 0) {
-      this.reportConstructionError(
+      throw new StaticJsError("ConstructionError",
         "Ensure when instantiating instance '__filename' is passed as an argument"
       );
     } else {
@@ -66,12 +100,13 @@ export class Static {
   public enableVars(): void {
     this.validateFile();
     if (!this.formatted_code || this.formatted_code.length === 0) {
-      this.reportFileReadError("Error reading file and parsing code");
+      throw new StaticJsError("FileReadError","Error reading file and parsing code");
     }
     this.removeComments();
     this.findVariableDeclarations();
     this.tokenizeVariableDeclarations();
     this.validateCustomTypes();
+    this.identifyPotentialCompositeTypes();
     this.validateCompositeTypes();
     this.tracePrimitiveTypedVariableReferences();
     this.traceCustomTypedVariableReferences();
@@ -79,6 +114,8 @@ export class Static {
     this.parsePrimitiveTypes();
     this.parseCustomTypes();
     this.parseCompositeTypes();
+    //after this, static type analysis has been performed
+    
   }
 
   private validateFile(): void {
@@ -88,7 +125,7 @@ export class Static {
       });
       this.formatted_code = data.split("\n").filter((n) => n);
     } catch (err) {
-      this.reportFileError(err["message"]);
+      throw new StaticJsError("FileReadError", err["message"]);
     }
   }
 
@@ -115,8 +152,8 @@ export class Static {
   }
 
   private findVariableDeclarations(): void {
-    const constKeyword: RegExp = /const/;
-    const letKeyword: RegExp = /let/;
+    const constKeyword: RegExp = /^\s*const\b/;
+    const letKeyword: RegExp = /^\s*let\b/;
     const lengthOfCode: number = this.formatted_code.length;
     for (let i: number = 0; i < lengthOfCode; i++) {
       const currentLineOfCode: string = this.formatted_code[i];
@@ -158,7 +195,7 @@ export class Static {
           .join("");
 
         if (!identifier) {
-          this.reportStaticTypingError(
+          throw new StaticJsError("Invalid Token Detected",
             "Internal Error On Tokenize Variable Declaration Method"
           );
         }
@@ -171,7 +208,7 @@ export class Static {
           (n) => n === "="
         );
         if (startIndex === -1) {
-          this.reportStaticTypingError(
+          throw new StaticJsError("Invalid Token Detected",
             "Internal Error On Tokenize Variable Declaration Method"
           );
         }
@@ -203,7 +240,7 @@ export class Static {
           .join("");
 
         if (!value) {
-          this.reportStaticTypingError(
+          throw new StaticJsError("Invalid Token Detected",
             "Internal Error On Tokenize Variable Declaration Method"
           );
         }
@@ -236,7 +273,7 @@ export class Static {
       const curentLineOfCode: string[] = this.formatted_code[i].split(" ");
       const lenOfCurrentLineOfCode: number = curentLineOfCode.length;
       for (let j: number = 0; j < lenOfCurrentLineOfCode; j++) {
-        if (/var/.test(curentLineOfCode[j])) {
+        if (/^s*var\b/.test(curentLineOfCode[j])) {
           interfaces.push(curentLineOfCode.join(" "));
           continue;
         }
@@ -273,8 +310,9 @@ export class Static {
             break;
           }
         }
+
         if (matched === false) {
-          this.reportStaticTypingError(
+          throw new StaticJsError("CustomTypeReferenceError",
             "Error finding reference to custom type: [" +
               currentNode.enforced_type +
               "]"
@@ -286,10 +324,29 @@ export class Static {
     }
   }
 
-  private validateCompositeTypes(): void {
-    //need to look at all non custom type variable nodes and view if the enforced type is not a primitive type
-    //if not primitive type update compositetype key to true
-    //Then validate that the composite type is actually a valid javascript composite type 
+  private validateCustomType(custom_type: string): boolean {
+    const interfaces: string[] = [];
+    const lenOfFormattedCode: number = this.formatted_code.length;
+
+    for (let i: number = 0; i < lenOfFormattedCode; i++) {
+      const curentLineOfCode: string[] = this.formatted_code[i].split(" ");
+      const lenOfCurrentLineOfCode: number = curentLineOfCode.length;
+      for (let j: number = 0; j < lenOfCurrentLineOfCode; j++) {
+        if (/^s*var\b/.test(curentLineOfCode[j])) {
+          interfaces.push(curentLineOfCode.join(" "));
+          continue;
+        }
+      }
+    }
+    const customTypeIdentifierNames: string[] = interfaces.map(n => {
+      const id: string = n.split(" ")[1];
+      return id;
+    })
+   
+    return customTypeIdentifierNames.includes(custom_type);
+  } 
+
+  private identifyPotentialCompositeTypes(): void {
     //! big int and promises will need to be supported later
 
     const lenOfVariableNodes: number = this.variable_node.length;
@@ -298,34 +355,45 @@ export class Static {
       if (
         currentNode.custom_type === false &&
         !currentNode.custom_type_interface &&
-        this.isCompositeType(currentNode.enforced_type.replace(/["']/g, "")) ===
-          true
+        this.isPotentialCompositeType(
+          currentNode.enforced_type.replace(/["']/g, "")
+        ) === true
       ) {
         currentNode.composite_type = true;
       }
     }
   }
 
-  private tracePrimitiveTypedVariableReferences():void {
-    
+  private validateCompositeTypes(): void {
+    const lenOfVariableNodes: number = this.variable_node.length;
+    for (let i: number = 0; i < lenOfVariableNodes; i++) {
+      const currentNode: VariableNode = this.variable_node[i];
+      if (currentNode.composite_type === true) {
+        this.isCompositeType(currentNode.enforced_type);
+      }
+    }
   }
-  private traceCustomTypedVariableReferences():void {
 
+  private tracePrimitiveTypedVariableReferences(): void {
+    //! need to go through each variable first filter all non composite and custom types and then look at each variable separately. all interctions with variable will be traced and added to the variable node array
+  } 
+  private traceCustomTypedVariableReferences(): void {
+    //! need to go through each variable first filter all custom types and then look at each variable separately. all interctions with variable will be traced and added to the variable node array
   }
-  private traceCompositeTypedVariableReferences():void {
-
+  private traceCompositeTypedVariableReferences(): void {
+    //! need to go through each variable first filter all composite types and then look at each variable separately. all interctions with variable will be traced and added to the variable node array
   }
   private parsePrimitiveTypes(): void {
-
+    //! i will go through each variable node that has a primitive type enforced and will look at each interaction that i traced and then will validate no illegal interaction occurs
   }
   private parseCustomTypes(): void {
-
+    //! i will go through each variable node that has a customn type enforced and will look at each interaction that i traced and then will validate no illegal interaction occurs
   }
   private parseCompositeTypes(): void {
-
+    //! i will go through each variable node that has a composite type enforced and will look at each interaction that i traced and then will validate no illegal interaction occurs
   }
 
-  private isCompositeType(type: string): boolean {
+  private isPotentialCompositeType(type: string): boolean {
     return (
       type !== "string" &&
       type !== "number" &&
@@ -335,12 +403,184 @@ export class Static {
       type !== "BigInt"
     );
   }
+  //! maps and sets only support primitive and composite types inhabiting their structure. may change later
+  private isCompositeType(type: string): void {
+    type = type.replace(/["']/g, "");
+    let valid: boolean = false;
+    let lastType: string = "";
+    switch (type) {
+      case "Date":
+        valid = true;
+        break;
+      case "Error":
+        valid = true;
+        break;
+      case "RegExp":
+        valid = true;
+        break;
+      default:
+        type RegexObject = {
+          pattern: RegExp;
+          matched: boolean;
+          literal?: string;
+          textRepresentation: string;
+        };
+        const mapRegex: RegexObject = {
+          pattern: /\bMap<[^>]*>/,
+          matched: false,
+          textRepresentation: "map",
+        };
+
+        const setRegex: RegexObject = {
+          pattern: /\bSet<[^>]*>/,
+          matched: false,
+          textRepresentation: "set",
+        };
+
+        const functionRegex: RegexObject = {
+          pattern: /\s*Function\s*\([^)]*\)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$]*\s*/,
+          matched: false,
+          textRepresentation: "function",
+        };
+
+        const weakMapRegex: RegexObject = {
+          pattern: /\s*WeakMap<[^>]*>/,
+          matched: false,
+          textRepresentation: "weakmap",
+        };
+
+        const weakSetRegex: RegexObject = {
+          pattern: /\s*WeakSet<[^>]*>/,
+          matched: false,
+          textRepresentation: "weakset",
+        };
+
+        const arrayRegex: RegexObject = {
+          pattern: /\[[^\]]*\]/,
+          matched: false,
+          textRepresentation: "",
+        };
+
+        const objRegex: RegexObject = {
+          pattern: /\{[^}]*\}/,
+          matched: false,
+          textRepresentation: "",
+        };
+
+        const regexArr: RegexObject[] = [
+          mapRegex,
+          setRegex,
+          functionRegex,
+          weakMapRegex,
+          weakSetRegex,
+          arrayRegex,
+          objRegex,
+        ];
+
+        const regexArrLen: number = regexArr.length;
+        for (let i: number = 0; i < regexArrLen; i++) {
+          const currRegex: RegexObject = regexArr[i];
+          if (currRegex.pattern.test(type)) {
+            valid = true;
+            currRegex.matched = true;
+            currRegex.literal = type;
+            break;
+          }
+          lastType = type;
+        }
+
+        if (valid === false) {
+          const isCustomType: boolean = lastType.split("")[0] === "$";
+          if (!isCustomType) {
+            throw new StaticJsError("CompositeTypeConstructionError",
+              "Unknown type: " + lastType
+            );
+          } else {
+            if (!this.validateCustomType(lastType)) {
+              throw new StaticJsError("CompositeTypeConstructionError",
+                "Unknown type: " + lastType
+              );
+            }
+          }
+        }
+
+        const stack = new Stack();
+        const matching_symbol: Record<string, string> = {
+          "}": "{",
+          "]": "[",
+          ")": "(",
+        };
+        const openingRegex: RegExp = /^[[({]+$/;
+
+        const currentCompositeTypeToEvaluate: RegexObject = regexArr.filter(
+          (n) => n.matched === true
+        )[0];
+
+        const characterizedCurrentlyEvaluatedCompositeType: string[] =
+          currentCompositeTypeToEvaluate?.literal
+            ?.split("")
+            .slice(
+              currentCompositeTypeToEvaluate.textRepresentation.length
+            ) || [""];
+
+        const lenOfCharacterizedCurrentlyEvaluatedCompositeTypeStr: number =
+          characterizedCurrentlyEvaluatedCompositeType.length;
+
+        //? may have messed something here in this regex
+        const typeRegex = /^[a-zA-Z_0-9$][a-zA-Z0-9_0-9$]*$/;
+
+        let typesToEvalute: string[] = [];
+        let currentPotentialType: string = "";
+
+        for (
+          let j: number = 0;
+          j < lenOfCharacterizedCurrentlyEvaluatedCompositeTypeStr;
+          j++
+        ) {
+          const currChar: string =
+            characterizedCurrentlyEvaluatedCompositeType[j];
+          if (openingRegex.test(currChar)) {
+            stack.push(currChar);
+          } else {
+            const matchingChar = matching_symbol?.[currChar];
+            if (matchingChar) {
+              const poppedValue: string | void = stack.pop();
+              if (poppedValue !== matchingChar) {
+                throw new StaticJsError("CompositeTypeConstructionError",
+                  "Error Parsing Composite Type, Incorrect Termination Of '" +
+                    matchingChar +
+                    "' In Type Definition"
+                );
+              }
+            }
+          }
+          if (typeRegex.test(currChar)) {
+            currentPotentialType += currChar;
+          } else {
+            typesToEvalute.push(currentPotentialType);
+            currentPotentialType = "";
+          }
+        }
+        if (stack.size() !== 0) {
+          throw new StaticJsError("CompositeTypeConstructionError",
+            "Error Parsing Composite Type, Incorrect Termination Of Either '[{(' In Type Definition"
+          );
+        }
+        typesToEvalute = typesToEvalute.filter((n) => n);
+        const lenOfTypesToEvaluate: number = typesToEvalute.length;
+        for (let h: number = 0; h < lenOfTypesToEvaluate; h++) {
+          const currentType: string = typesToEvalute[h];
+          if (this.isPotentialCompositeType(currentType) === true) {
+            this.isCompositeType(currentType);
+          } //else it is i a primitive type
+        }
+    }
+  }
 
   //got to figure out how to evaluate types
   private tokenizeIdentifier(lineOfCode: string[]): string {
     const letKeyword: RegExp = /let/;
     const constKeyword: RegExp = /const/;
-    // console.log(lineOfCode);
     const len: number = lineOfCode.length;
     for (let i: number = 0; i < len; i++) {
       if (letKeyword.test(lineOfCode[i]) || constKeyword.test(lineOfCode[i])) {
@@ -349,114 +589,8 @@ export class Static {
     }
     return "";
   }
-  private reportAggregateErrors(): void {
-    if (this.aggregatedErrors.length !== 0) {
-      const code: number = 1;
-      const errType: string = "Staticjs Typing Error";
-      const error_messages: string = this.aggregatedErrors.join("\n") + "\n";
 
-      const heading: string =
-        chalk(`${errType.toUpperCase()}`, Colors.bgRed) + "\n";
-      const body: string = chalk(error_messages, Colors.red);
-      const ending: string =
-        chalk(`Process exiting with code: ${code}`, Colors.cyan) + "\n";
-
-      console.error(heading);
-      console.error(body);
-      console.error(ending);
-    }
-  }
-  private reportExecuteCodeError(
-    message: string,
-    errType: string = "ExecuteCodeError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
-  private reportWriteFileError(
-    message: string,
-    errType: string = "WriteFileError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
-  private reportStaticTypingError(
-    message: string,
-    errType: string = "StaticTypingError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
-  private reportFileReadError(
-    message: string,
-    errType: string = "FileReadError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
-  private reportFileError(
-    message: string,
-    errType: string = "FileError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
-  private reportConstructionError(
-    message: string,
-    errType: string = "ConstructionError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
-  private reportCreateCodeError(
-    message: string,
-    errType: string = "CreateCodeError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
+  
   private force_quit_for_dev_purposed_only(): void {
     process.exit(1);
   }
