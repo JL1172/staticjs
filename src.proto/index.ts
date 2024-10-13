@@ -72,6 +72,7 @@ export class Static {
     this.findVariableDeclarations();
     this.tokenizeVariableDeclarations();
     this.validateCustomTypes();
+    this.identifyPotentialCompositeTypes();
     this.validateCompositeTypes();
     this.tracePrimitiveTypedVariableReferences();
     this.traceCustomTypedVariableReferences();
@@ -79,6 +80,8 @@ export class Static {
     this.parsePrimitiveTypes();
     this.parseCustomTypes();
     this.parseCompositeTypes();
+
+    // console.log(this.variable_node);
   }
 
   private validateFile(): void {
@@ -115,8 +118,8 @@ export class Static {
   }
 
   private findVariableDeclarations(): void {
-    const constKeyword: RegExp = /const/;
-    const letKeyword: RegExp = /let/;
+    const constKeyword: RegExp = /^\s*const\b/;
+    const letKeyword: RegExp = /^\s*let\b/;
     const lengthOfCode: number = this.formatted_code.length;
     for (let i: number = 0; i < lengthOfCode; i++) {
       const currentLineOfCode: string = this.formatted_code[i];
@@ -236,7 +239,7 @@ export class Static {
       const curentLineOfCode: string[] = this.formatted_code[i].split(" ");
       const lenOfCurrentLineOfCode: number = curentLineOfCode.length;
       for (let j: number = 0; j < lenOfCurrentLineOfCode; j++) {
-        if (/var/.test(curentLineOfCode[j])) {
+        if (/^s*var\b/.test(curentLineOfCode[j])) {
           interfaces.push(curentLineOfCode.join(" "));
           continue;
         }
@@ -286,10 +289,7 @@ export class Static {
     }
   }
 
-  private validateCompositeTypes(): void {
-    //need to look at all non custom type variable nodes and view if the enforced type is not a primitive type
-    //if not primitive type update compositetype key to true
-    //Then validate that the composite type is actually a valid javascript composite type 
+  private identifyPotentialCompositeTypes(): void {
     //! big int and promises will need to be supported later
 
     const lenOfVariableNodes: number = this.variable_node.length;
@@ -298,34 +298,33 @@ export class Static {
       if (
         currentNode.custom_type === false &&
         !currentNode.custom_type_interface &&
-        this.isCompositeType(currentNode.enforced_type.replace(/["']/g, "")) ===
-          true
+        this.isPotentialCompositeType(
+          currentNode.enforced_type.replace(/["']/g, "")
+        ) === true
       ) {
         currentNode.composite_type = true;
       }
     }
   }
 
-  private tracePrimitiveTypedVariableReferences():void {
-    
-  }
-  private traceCustomTypedVariableReferences():void {
-
-  }
-  private traceCompositeTypedVariableReferences():void {
-
-  }
-  private parsePrimitiveTypes(): void {
-
-  }
-  private parseCustomTypes(): void {
-
-  }
-  private parseCompositeTypes(): void {
-
+  private validateCompositeTypes(): void {
+    const lenOfVariableNodes: number = this.variable_node.length;
+    for (let i: number = 0; i < lenOfVariableNodes; i++) {
+      const currentNode: VariableNode = this.variable_node[i];
+      if (currentNode.composite_type === true) {
+        this.isCompositeType(currentNode.enforced_type);
+      }
+    }
   }
 
-  private isCompositeType(type: string): boolean {
+  private tracePrimitiveTypedVariableReferences(): void {}
+  private traceCustomTypedVariableReferences(): void {}
+  private traceCompositeTypedVariableReferences(): void {}
+  private parsePrimitiveTypes(): void {}
+  private parseCustomTypes(): void {}
+  private parseCompositeTypes(): void {}
+
+  private isPotentialCompositeType(type: string): boolean {
     return (
       type !== "string" &&
       type !== "number" &&
@@ -335,7 +334,82 @@ export class Static {
       type !== "BigInt"
     );
   }
+  //! maps and sets only support primitive and composite types inhabiting their structure. may change later
+  private isCompositeType(type: string): void {
+    type = type.replace(/["']/g, "");
+    console.log(type);
+    let valid: boolean = false;
+    let lastType: string = "";
+    switch (type) {
+      case "Date":
+        valid = true;
+        break;
+      case "Error":
+        valid = true;
+        break;
+      case "RegExp":
+        valid = true;
+      default:
+        type RegexObject = { pattern: RegExp; matched: boolean };
+        const mapRegex: RegexObject = {
+          pattern: /\s*Map<[^>]*>/,
+          matched: false,
+        };
+        
+        const setRegex: RegexObject = {
+          pattern: /\s*Set<[^>]*>/,
+          matched: false,
+        };
 
+        const functionRegex: RegexObject = {
+          pattern:
+            /\s*Function\s*\([^)]*\)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$]*\s*/,
+          matched: false,
+        };
+
+        const weakMapRegex: RegexObject = {
+          pattern: /\s*WeakMap<[^>]*>/,
+          matched: false,
+        };
+
+        const weakSetRegex: RegexObject = {
+          pattern: /\s*WeakSet<[^>]*>/,
+          matched: false,
+        };
+
+        const arrayRegex: RegexObject = {
+          pattern: /\[[^\]]*\]/,
+          matched: false,
+        };
+
+        const objRegex: RegexObject = { pattern: /\{[^}]*\}/, matched: false };
+
+        const regexArr: RegexObject[] = [
+          mapRegex,
+          setRegex,
+          functionRegex,
+          weakMapRegex,
+          weakSetRegex,
+          arrayRegex,
+          objRegex,
+        ];
+
+        const regexArrLen: number = regexArr.length;
+        for (let i: number = 0; i < regexArrLen; i++) {
+          const currRegex: RegexObject = regexArr[i];
+          if (currRegex.pattern.test(type)) {
+            valid = true;
+            currRegex.matched = true;
+            break;
+          }
+          lastType = type;
+        }
+        
+        if (valid === false) {
+          this.reportCompositeTypeConstructionError("Unknown type: " + lastType);
+        }
+    }
+  }
   //got to figure out how to evaluate types
   private tokenizeIdentifier(lineOfCode: string[]): string {
     const letKeyword: RegExp = /let/;
@@ -348,6 +422,20 @@ export class Static {
       }
     }
     return "";
+  }
+
+  private reportCompositeTypeConstructionError(
+    message: string,
+    errType: string = "CompositeTypeConstructionError"
+  ): void {
+    const messageToPresent =
+      chalk("[ErrorType]: ", Colors.bgRed) +
+      chalk(errType, Colors.bgRed) +
+      "\n" +
+      chalk(message, Colors.red);
+    console.error(messageToPresent);
+    console.trace();
+    process.exit(1);
   }
   private reportAggregateErrors(): void {
     if (this.aggregatedErrors.length !== 0) {
