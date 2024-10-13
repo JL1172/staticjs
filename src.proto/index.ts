@@ -42,6 +42,21 @@ class VariableNode extends Node {
   }
 }
 
+class Stack {
+  private stack: string[] = [];
+  public push(value: string): void {
+    this.stack.push(value);
+  }
+  public pop(): string | void {
+    if (this.stack.length > 0) {
+      return this.stack.pop();
+    }
+  }
+  public size(): number {
+    return this.stack.length;
+  }
+}
+
 export class Static {
   private path: string = "";
   private readonly fs: typeof fs = fs;
@@ -423,12 +438,71 @@ export class Static {
             "Unknown type: " + lastType
           );
         }
+
+        const stack = new Stack();
+        const matching_symbol: Record<string, string> = {
+          "}": "{",
+          "]": "[",
+          ")": "(",
+        };
+        const openingRegex: RegExp = /^[[({]+$/;
+
         const currentCompositeTypeToEvaluate: RegexObject = regexArr.filter(
           (n) => n.matched === true
         )[0];
 
-        const characterizedCurrentlyEvaluatedCompositeType: string = currentCompositeTypeToEvaluate.literal?.split("").slice(currentCompositeTypeToEvaluate.textRepresentation.length).join("") || "";
-        console.log(characterizedCurrentlyEvaluatedCompositeType)
+        const characterizedCurrentlyEvaluatedCompositeType: string[] =
+          currentCompositeTypeToEvaluate.literal
+            ?.split("")
+            .slice(
+              currentCompositeTypeToEvaluate.textRepresentation.length
+            ) || [""];
+
+        const lenOfCharacterizedCurrentlyEvaluatedCompositeTypeStr: number =
+          characterizedCurrentlyEvaluatedCompositeType.length;
+
+        //? may have messed something here in this regex
+        const typeRegex = /^[a-zA-Z_0-9$][a-zA-Z0-9_0-9$]*$/;
+
+        let typesToEvalute: string[] = [];
+        let currentPotentialType: string = "";
+        // console.log(characterizedCurrentlyEvaluatedCompositeType.join(""));
+        for (
+          let j: number = 0;
+          j < lenOfCharacterizedCurrentlyEvaluatedCompositeTypeStr;
+          j++
+        ) {
+          const currChar: string =
+            characterizedCurrentlyEvaluatedCompositeType[j];
+          if (openingRegex.test(currChar)) {
+            stack.push(currChar);
+          } else {
+            const matchingChar = matching_symbol?.[currChar];
+            if (matchingChar) {
+              const poppedValue: string | void = stack.pop();
+              if (poppedValue !== matchingChar) {
+                this.reportCompositeTypeConstructionError(
+                  "Error Parsing Composite Type, Incorrect Termination Of '" +
+                    matchingChar +
+                    "' In Type Definition"
+                );
+              }
+            }
+          }
+          if (typeRegex.test(currChar)) {
+            currentPotentialType += currChar;
+          } else {
+            typesToEvalute.push(currentPotentialType);
+            currentPotentialType = "";
+          }
+        }
+        typesToEvalute = typesToEvalute.filter((n) => n);
+        if (stack.size() !== 0) {
+          this.reportCompositeTypeConstructionError(
+            "Error Parsing Composite Type, Incorrect Termination Of Either '[{(' In Type Definition"
+          );
+        }
+      // console.log(typesToEvalute);
     }
   }
   //got to figure out how to evaluate types
