@@ -540,25 +540,6 @@ export class Static {
             this.isCompositeType(currentType);
           } //else it is i a primitive type
         }
-      // console.log(typesToEvalute);
-      // console.log("break");
-      /*
-      [
-        'string',
-        'number',
-        '$CustomType',
-        'string',
-        'number',
-        '$Custom_Type2',
-        'Date'
-      ]
-      [ 'string', 'number' ]
-      [ 'string', 'number' ]
-      [ 'string' ]
-      [ 'string', 'number' ]
-      [ 'number' ]
-      [ 'number' ]
-      */
     }
   }
 
@@ -566,7 +547,6 @@ export class Static {
   private tokenizeIdentifier(lineOfCode: string[]): string {
     const letKeyword: RegExp = /let/;
     const constKeyword: RegExp = /const/;
-    // console.log(lineOfCode);
     const len: number = lineOfCode.length;
     for (let i: number = 0; i < len; i++) {
       if (letKeyword.test(lineOfCode[i]) || constKeyword.test(lineOfCode[i])) {
