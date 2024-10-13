@@ -6,7 +6,8 @@
   "type": "commonjs",
   "types": "./types/index.d.ts",
   "scripts": {
-    "c": "tsc src/index.ts && node test/index.test.js"
+    "c": "tsc src/index.ts && node test/index.test.js",
+    "todoscript": "npx ts-node dev_bin/todo_script.ts --"
   },
   "keywords": [
     "static",
