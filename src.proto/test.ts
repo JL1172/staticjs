@@ -25,13 +25,15 @@ const min = 2; "number";
 
 const date = new Date(); "Date";
 
+// const trueFalse = {name: "hi"}; "$Custom_typeoisjf";
+
 const nothing = null; "null";
 
 const und = undefined; "undefined";
 
 const name = "jacob lang"; "string";
 
-const array = ['jacob','lain','isaac']; "[string | number | $CustomType | [{string, number}] | $Custom_Type2 | Date]";
+const array = ['jacob','lain','isaac']; "[string | number | $CustomType | [{string, number}] | $CustomType | Date]";
 
 const obj = {name: "jacob", age: 23}; "{string | number}";
 

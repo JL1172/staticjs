@@ -57,6 +57,25 @@ class Stack {
   }
 }
 
+class StaticJsError extends Error {
+  public message: string = "";
+  public errortagType: string = "";
+  constructor(name:string, message: string) {
+    super(name);
+    this.message = message;
+    this.reportError(this.message, name);
+  }
+  private reportError(message: string, name: string): void {
+    const messageToPresent =
+    chalk("[" + StaticJsError.name + "] " + name, Colors.bgRed) +
+    "\n" +
+    chalk(message, Colors.red);
+  console.error(messageToPresent);
+  console.trace();
+  process.exit(1);
+  }
+}
+
 export class Static {
   private path: string = "";
   private readonly fs: typeof fs = fs;
@@ -68,7 +87,7 @@ export class Static {
 
   constructor(fileName: string) {
     if (fileName.trim().length === 0) {
-      this.reportConstructionError(
+      throw new StaticJsError("ConstructionError",
         "Ensure when instantiating instance '__filename' is passed as an argument"
       );
     } else {
@@ -79,7 +98,7 @@ export class Static {
   public enableVars(): void {
     this.validateFile();
     if (!this.formatted_code || this.formatted_code.length === 0) {
-      this.reportFileReadError("Error reading file and parsing code");
+      throw new StaticJsError("FileReadError","Error reading file and parsing code");
     }
     this.removeComments();
     this.findVariableDeclarations();
@@ -94,7 +113,6 @@ export class Static {
     this.parseCustomTypes();
     this.parseCompositeTypes();
 
-    // console.log(this.variable_node);
   }
 
   private validateFile(): void {
@@ -104,7 +122,7 @@ export class Static {
       });
       this.formatted_code = data.split("\n").filter((n) => n);
     } catch (err) {
-      this.reportFileError(err["message"]);
+      throw new StaticJsError("FileReadError", err["message"]);
     }
   }
 
@@ -174,7 +192,7 @@ export class Static {
           .join("");
 
         if (!identifier) {
-          this.reportStaticTypingError(
+          throw new StaticJsError("Invalid Token Detected",
             "Internal Error On Tokenize Variable Declaration Method"
           );
         }
@@ -187,7 +205,7 @@ export class Static {
           (n) => n === "="
         );
         if (startIndex === -1) {
-          this.reportStaticTypingError(
+          throw new StaticJsError("Invalid Token Detected",
             "Internal Error On Tokenize Variable Declaration Method"
           );
         }
@@ -219,7 +237,7 @@ export class Static {
           .join("");
 
         if (!value) {
-          this.reportStaticTypingError(
+          throw new StaticJsError("Invalid Token Detected",
             "Internal Error On Tokenize Variable Declaration Method"
           );
         }
@@ -289,8 +307,9 @@ export class Static {
             break;
           }
         }
+
         if (matched === false) {
-          this.reportStaticTypingError(
+          throw new StaticJsError("CustomTypeReferenceError",
             "Error finding reference to custom type: [" +
               currentNode.enforced_type +
               "]"
@@ -458,12 +477,12 @@ export class Static {
         if (valid === false) {
           const isCustomType: boolean = lastType.split("")[0] === "$";
           if (!isCustomType) {
-            this.reportCompositeTypeConstructionError(
+            throw new StaticJsError("CompositeTypeConstructionError",
               "Unknown type: " + lastType
             );
           } else {
             if (!this.validateCustomType(lastType)) {
-              this.reportCompositeTypeConstructionError(
+              throw new StaticJsError("CompositeTypeConstructionError",
                 "Unknown type: " + lastType
               );
             }
@@ -512,7 +531,7 @@ export class Static {
             if (matchingChar) {
               const poppedValue: string | void = stack.pop();
               if (poppedValue !== matchingChar) {
-                this.reportCompositeTypeConstructionError(
+                throw new StaticJsError("CompositeTypeConstructionError",
                   "Error Parsing Composite Type, Incorrect Termination Of '" +
                     matchingChar +
                     "' In Type Definition"
@@ -528,7 +547,7 @@ export class Static {
           }
         }
         if (stack.size() !== 0) {
-          this.reportCompositeTypeConstructionError(
+          throw new StaticJsError("CompositeTypeConstructionError",
             "Error Parsing Composite Type, Incorrect Termination Of Either '[{(' In Type Definition"
           );
         }
@@ -556,127 +575,7 @@ export class Static {
     return "";
   }
 
-  private reportCompositeTypeConstructionError(
-    message: string,
-    errType: string = "CompositeTypeConstructionError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
-  private reportAggregateErrors(): void {
-    if (this.aggregatedErrors.length !== 0) {
-      const code: number = 1;
-      const errType: string = "Staticjs Typing Error";
-      const error_messages: string = this.aggregatedErrors.join("\n") + "\n";
-
-      const heading: string =
-        chalk(`${errType.toUpperCase()}`, Colors.bgRed) + "\n";
-      const body: string = chalk(error_messages, Colors.red);
-      const ending: string =
-        chalk(`Process exiting with code: ${code}`, Colors.cyan) + "\n";
-
-      console.error(heading);
-      console.error(body);
-      console.error(ending);
-    }
-  }
-  private reportExecuteCodeError(
-    message: string,
-    errType: string = "ExecuteCodeError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
-  private reportWriteFileError(
-    message: string,
-    errType: string = "WriteFileError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
-  private reportStaticTypingError(
-    message: string,
-    errType: string = "StaticTypingError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
-  private reportFileReadError(
-    message: string,
-    errType: string = "FileReadError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
-  private reportFileError(
-    message: string,
-    errType: string = "FileError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
-  private reportConstructionError(
-    message: string,
-    errType: string = "ConstructionError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
-  private reportCreateCodeError(
-    message: string,
-    errType: string = "CreateCodeError"
-  ): void {
-    const messageToPresent =
-      chalk("[ErrorType]: ", Colors.bgRed) +
-      chalk(errType, Colors.bgRed) +
-      "\n" +
-      chalk(message, Colors.red);
-    console.error(messageToPresent);
-    console.trace();
-    process.exit(1);
-  }
+  
   private force_quit_for_dev_purposed_only(): void {
     process.exit(1);
   }
