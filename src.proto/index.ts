@@ -49,8 +49,6 @@ export class Static {
   private formatted_code: string[];
   private variable_declarations: string[] = [];
   private variable_node: VariableNode[] = [];
-  private newCode: string = "";
-  private newCodePath: string = "";
   private aggregatedErrors: string[] = [];
 
   constructor(fileName: string) {
@@ -337,7 +335,6 @@ export class Static {
   //! maps and sets only support primitive and composite types inhabiting their structure. may change later
   private isCompositeType(type: string): void {
     type = type.replace(/["']/g, "");
-    console.log(type);
     let valid: boolean = false;
     let lastType: string = "";
     switch (type) {
@@ -349,15 +346,16 @@ export class Static {
         break;
       case "RegExp":
         valid = true;
+        break;
       default:
         type RegexObject = { pattern: RegExp; matched: boolean };
         const mapRegex: RegexObject = {
-          pattern: /\s*Map<[^>]*>/,
+          pattern: /\bMap<[^>]*>/,
           matched: false,
         };
         
         const setRegex: RegexObject = {
-          pattern: /\s*Set<[^>]*>/,
+          pattern: /\bSet<[^>]*>/,
           matched: false,
         };
 
@@ -408,6 +406,7 @@ export class Static {
         if (valid === false) {
           this.reportCompositeTypeConstructionError("Unknown type: " + lastType);
         }
+        
     }
   }
   //got to figure out how to evaluate types
