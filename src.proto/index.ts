@@ -348,39 +348,53 @@ export class Static {
         valid = true;
         break;
       default:
-        type RegexObject = { pattern: RegExp; matched: boolean };
+        type RegexObject = {
+          pattern: RegExp;
+          matched: boolean;
+          literal?: string;
+          textRepresentation: string;
+        };
         const mapRegex: RegexObject = {
           pattern: /\bMap<[^>]*>/,
           matched: false,
+          textRepresentation: "map",
         };
-        
+
         const setRegex: RegexObject = {
           pattern: /\bSet<[^>]*>/,
           matched: false,
+          textRepresentation: "set",
         };
 
         const functionRegex: RegexObject = {
-          pattern:
-            /\s*Function\s*\([^)]*\)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$]*\s*/,
+          pattern: /\s*Function\s*\([^)]*\)\s*:\s*[a-zA-Z_$][a-zA-Z0-9_$]*\s*/,
           matched: false,
+          textRepresentation: "function",
         };
 
         const weakMapRegex: RegexObject = {
           pattern: /\s*WeakMap<[^>]*>/,
           matched: false,
+          textRepresentation: "weakmap",
         };
 
         const weakSetRegex: RegexObject = {
           pattern: /\s*WeakSet<[^>]*>/,
           matched: false,
+          textRepresentation: "weakset",
         };
 
         const arrayRegex: RegexObject = {
           pattern: /\[[^\]]*\]/,
           matched: false,
+          textRepresentation: "",
         };
 
-        const objRegex: RegexObject = { pattern: /\{[^}]*\}/, matched: false };
+        const objRegex: RegexObject = {
+          pattern: /\{[^}]*\}/,
+          matched: false,
+          textRepresentation: "",
+        };
 
         const regexArr: RegexObject[] = [
           mapRegex,
@@ -398,15 +412,23 @@ export class Static {
           if (currRegex.pattern.test(type)) {
             valid = true;
             currRegex.matched = true;
+            currRegex.literal = type;
             break;
           }
           lastType = type;
         }
-        
+
         if (valid === false) {
-          this.reportCompositeTypeConstructionError("Unknown type: " + lastType);
+          this.reportCompositeTypeConstructionError(
+            "Unknown type: " + lastType
+          );
         }
-        
+        const currentCompositeTypeToEvaluate: RegexObject = regexArr.filter(
+          (n) => n.matched === true
+        )[0];
+
+        const characterizedCurrentlyEvaluatedCompositeType: string = currentCompositeTypeToEvaluate.literal?.split("").slice(currentCompositeTypeToEvaluate.textRepresentation.length).join("") || "";
+        console.log(characterizedCurrentlyEvaluatedCompositeType)
     }
   }
   //got to figure out how to evaluate types
