@@ -12,13 +12,15 @@ abstract class Node {
   public custom_type: boolean;
   public custom_type_interface: string;
   public composite_type: boolean;
+  public references: string[];
   constructor(
     id: string,
     val: string,
     type: string,
     custom_type: boolean = false,
     custom_type_interface: string = "",
-    composite_type: boolean = false
+    composite_type: boolean = false,
+    references: string[] = [],
   ) {
     this.identifier = id;
     this.value = val;
@@ -26,21 +28,17 @@ abstract class Node {
     this.custom_type = custom_type;
     this.custom_type_interface = custom_type_interface;
     this.composite_type = composite_type;
+    this.references = references;
   }
 }
 
 class VariableNode extends Node {
-  public identifier: string;
-  public value: string;
-  public enforced_type: string;
-  public custom_type: boolean = false;
   constructor(
     id: string,
     val: string,
     type: string,
-    custom_type: boolean = false
   ) {
-    super(id, val, type, custom_type);
+    super(id, val, type);
   }
 }
 
@@ -114,6 +112,7 @@ export class Static {
     this.parsePrimitiveTypes();
     this.parseCustomTypes();
     this.parseCompositeTypes();
+    this.tracePrimitiveTypedVariableReferences();
     //after this, static type analysis has been performed
     
   }
@@ -373,10 +372,30 @@ export class Static {
       }
     }
   }
+//todo not finished this from here 
+private tracePrimitiveTypedVariableReferences(): void {
+  const len: number = this.variable_node.length;
+  for (let i: number = 0; i < len; i++) {
+    const currNode: VariableNode = this.variable_node[i];
+    if (currNode.composite_type === false && currNode.custom_type === false) {
+      currNode.references = this.findReferencesOfVarible(currNode.identifier);
+      console.log(currNode);
+    }
+  }
+  //! need to go through each variable first filter all non composite and custom types and then look at each variable separately. all interctions with variable will be traced and added to the variable node array
+} 
 
-  private tracePrimitiveTypedVariableReferences(): void {
-    //! need to go through each variable first filter all non composite and custom types and then look at each variable separately. all interctions with variable will be traced and added to the variable node array
-  } 
+private findReferencesOfVarible(identifier: string): string[] {
+  const codeLen: number = this.formatted_code.length;
+  const references: string[] = [];
+  
+  for (let i: number = 0; i < codeLen; i++) {
+    const currentLineOfCode: string[] = this.formatted_code[i].split(" ");
+    
+  }
+  return references;
+}
+//todo not finished this to here
   private traceCustomTypedVariableReferences(): void {
     //! need to go through each variable first filter all custom types and then look at each variable separately. all interctions with variable will be traced and added to the variable node array
   }

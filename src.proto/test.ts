@@ -31,13 +31,19 @@ const nothing = null; "null";
 
 const und = undefined; "undefined";
 
-const name = "jacob lang"; "string";
+let name : any = "jacob lang"; "string";
 
 const array = ['jacob','lain','isaac']; "[string | number | $CustomType | [{string, number}] | $CustomType | Date]";
 
 const obj = {name: "jacob", age: 23}; "{string | number}";
 
 const map = new Map(); "Map<string, number>";
+
+map.set("name", 1);
+
+name=2;
+name= "ahs";
+
 
 // const bigInt = 3242048203094832892333232323223; "BigInt"
 
